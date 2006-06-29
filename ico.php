@@ -1,15 +1,28 @@
 <?php
 /*
 *------------------------------------------------------------
-*                   ICO Image functions
+*                   ICO Image functions v2.0
 *------------------------------------------------------------
 *                      By JPEXS
+*
+*           Function list:
+*              ImageCreateFromIco - Reads image from a ICO file
+*              ImageCreateFromExeIco - Reads image from icon in EXE file
+*              SaveExeIcon - Saves icon from the exe file
+*              ImageIco - Saves an image to icofile or writes it to output
 */
 
-define("TRUE_COLOR", 16777216);
+define("TRUE_COLOR", 0x1000000);
 define("XP_COLOR", 4294967296);
 define("MAX_COLOR", -2);
 define("MAX_SIZE", -2);
+
+/*
+        Version changes:
+                v2.0 - For icons with Alpha channel now you can set background color
+                     - ImageCreateFromExeIco added
+                     - Fixed MAX_SIZE and MAX_COLOR values
+*/
 
 /*
 *------------------------------------------------------------
@@ -21,11 +34,12 @@ define("MAX_SIZE", -2);
 *                 $icoColorCount - Icon color count (For multiple icons ico file)
 *                                - 2,16,256, TRUE_COLOR or XP_COLOR
 *                       $icoSize - Icon width       (For multiple icons ico file)
+*  $AlphaBgR,$AlphaBgG,$AlphaBgB - Background color for alpha-channel images (Default is White)
 *            Returns: Image ID
 */
 
 
-function ImageCreateFromIco($filename,$icoColorCount=16,$icoSize=16)
+function ImageCreateFromIco($filename,$icoColorCount=16,$icoSize=16,$AlphaBgR=255,$AlphaBgG=255,$AlphaBgB=255)
 {
 $Ikona=GetIconsInfo($filename);
 
@@ -43,14 +57,14 @@ $Ikona[$p]["NumberOfColors"]=pow(2,$Ikona[$p]["Info"]["BitsPerPixel"]);
 for($p=0;$p<count($Ikona);$p++)
 {
 
-if(($ColMax==-1)or($Ikona[$p]["NumberOfColors"]>$Ikona[$ColMax]["NumberOfColors"]))
-if(($icoSize==$Ikona[$p]["Width"])or($icoSize==-2))
+if(($ColMax==-1)or($Ikona[$p]["NumberOfColors"]>=$Ikona[$ColMax]["NumberOfColors"]))
+if(($icoSize==$Ikona[$p]["Width"])or($icoSize==MAX_SIZE))
  {
   $ColMax=$p;
  };
 
-if(($SizeMax==-1)or($Ikona[$p]["Width"]>$Ikona[$SizeMax]["Width"]))
-if(($icoColorCount==$Ikona[$p]["NumberOfColors"])or($icoColorCount==-2))
+if(($SizeMax==-1)or($Ikona[$p]["Width"]>=$Ikona[$SizeMax]["Width"]))
+if(($icoColorCount==$Ikona[$p]["NumberOfColors"])or($icoColorCount==MAX_COLOR))
  {
    $SizeMax=$p;
  };
@@ -64,15 +78,15 @@ if($Ikona[$p]["Width"]==$icoSize)
  };
 };
 
-if($icoSize==-2) $IconID=$SizeMax;
-if($icoColorCount==-2) $IconID=$ColMax;
+  if($icoColorCount==MAX_COLOR) $IconID=$ColMax;
+  if($icoSize==MAX_SIZE) $IconID=$SizeMax;
 
 $ColName=$icoColorCount;
 
-if($icoSize==-2) $icoSize="Max";
-if($ColName==16777216) $ColName="True";
-if($ColName==4294967296) $ColName="XP";
-if($ColName==-2) $ColName="Max";
+if($icoSize==MAX_SIZE) $icoSize="Max";
+if($ColName==TRUE_COLOR) $ColName="True";
+if($ColName==XP_COLOR) $ColName="XP";
+if($ColName==MAX_COLOR) $ColName="Max";
 if($IconID==-1) die("Icon with $ColName colors and $icoSize x $icoSize size doesn't exist in this file!");
 
 
@@ -93,20 +107,24 @@ ReadIcon($filename,$IconID,$Ikona);
 $Ikona[$IconID]["BitCount"]=$Ikona[$IconID]["Info"]["BitsPerPixel"];
 
 
+
 if($Ikona[$IconID]["BitCount"]>=24)
 {
 $img=imagecreatetruecolor($Ikona[$IconID]["Width"],$Ikona[$IconID]["Height"]);
-
+if($Ikona[$IconID]["BitCount"]==32):
+  $backcolor=imagecolorallocate($img,$AlphaBgR,$AlphaBgG,$AlphaBgB);
+  imagefilledrectangle($img,0,0,$Ikona[$IconID]["Width"]-1,$Ikona[$IconID]["Height"]-1,$backcolor);
+endif;
 for($y=0;$y<$Ikona[$IconID]["Height"];$y++)
 for($x=0;$x<$Ikona[$IconID]["Width"];$x++)
  {
  $R=$Ikona[$IconID]["Data"][$x][$y]["r"];
  $G=$Ikona[$IconID]["Data"][$x][$y]["g"];
  $B=$Ikona[$IconID]["Data"][$x][$y]["b"];
- $Alpha=round($Ikona[$IconID]["Data"][$x][$y]["alpha"]/2);
-
  if($Ikona[$IconID]["BitCount"]==32)
  {
+ $Alpha=127-round($Ikona[$IconID]["Data"][$x][$y]["alpha"]*127/255);
+ if($Ikona[$IconID]["Maska"][$x][$y]==1) $Alpha=127;
  $color=imagecolorexactalpha($img,$R,$G,$B,$Alpha);
  if($color==-1) $color=imagecolorallocatealpha($img,$R,$G,$B,$Alpha);
  }
@@ -133,11 +151,7 @@ for($x=0;$x<$Ikona[$IconID]["Width"];$x++)
  imagesetpixel($img,$x,$y,$Paleta[$Ikona[$IconID]["Data"][$x][$y]]);
  };
 };
-
-
-
-
-
+$IsTransparent=false;  
 for($y=0;$y<$Ikona[$IconID]["Height"];$y++)
 for($x=0;$x<$Ikona[$IconID]["Width"];$x++)
  if($Ikona[$IconID]["Maska"][$x][$y]==1)
@@ -147,12 +161,12 @@ for($x=0;$x<$Ikona[$IconID]["Width"];$x++)
   };
 if($Ikona[$IconID]["BitCount"]==32)
 {
- imagealphablending($img, FALSE);
+ imagealphablending($img, false);
  if(function_exists("imagesavealpha"))
   imagesavealpha($img,true);
 };
 
- if($IsTransparent)
+if($IsTransparent)
  {
   if(($Ikona[$IconID]["BitCount"]>=24)or(imagecolorstotal($img)>=256))
    {
@@ -325,17 +339,232 @@ for($p=0;$p<$Count;$p++)
   $Ikona[$p]["ImageOffset"]=freaddword($f);
  };
 
-for($p=0;$p<$Count;$p++)
- {
-  fseek($f,$Ikona[$p]["ImageOffset"]+14);
-  $Ikona[$p]["Info"]["BitsPerPixel"]=freadword($f);
- };
-
+if(!feof($f)):
+  for($p=0;$p<$Count;$p++)
+   {
+    fseek($f,$Ikona[$p]["ImageOffset"]+14);
+    $Ikona[$p]["Info"]["BitsPerPixel"]=freadword($f);
+   };
+endif;
 fclose($f);
 return $Ikona;
 };
 
 
+
+
+/*
+*------------------------------------------------------------
+*                    ImageCreateFromExeIco
+*------------------------------------------------------------
+*            - Reads image from a icon in exe file
+*
+*         Parameters:  $filename - Target exefile
+*                      $icoIndex - Index of the icon in exefile
+*                 $icoColorCount - Icon color count (For multiple icons ico file)
+*                                - 2,16,256, TRUE_COLOR or XP_COLOR
+*                       $icoSize - Icon width       (For multiple icons ico file)
+*  $AlphaBgR,$AlphaBgG,$AlphaBgB - Background color for alpha-channel images (Default is White)
+*            Returns: Image ID or empty string if failed
+*/
+function ImageCreateFromExeIco($filename,$icoIndex,$icoColorCount=16,$icoSize=16,$AlphaBgR=255,$AlphaBgG=255,$AlphaBgB=255)
+{
+ $ok=SaveExeIcon($filename,"icotemp.dat",$icoIndex);
+ if(!$ok):
+  $im="";
+ else:
+   $im=ImageCreateFromIco("icotemp.dat",$icoColorCount,$icoSize,$AlphaBgR,$AlphaBgG,$AlphaBgB);
+   unlink("icotemp.dat");
+ endif;
+ return $im;
+};
+
+
+/*
+*------------------------------------------------------------
+*                    SaveExeIcon
+*------------------------------------------------------------
+*            - Saves icon from the exe file
+*
+*         Parameters:  $filename - Target exefile
+*             $icoFileNameOrPath - Filename to save ico or path (Default "")
+*                                  (path if you want more than 1 icon)
+*                                  (If "", the filename is "$icoIndex.ico")
+*
+*                      $icoIndex - Index(es) of the icon in exefile  (Default -1)
+*                                  (If -1, all icons are saved)
+*                                  (Can be an array of indexes!)
+*/
+function SaveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1/*-1 for all,or can be array*/)
+{
+  global $f,$StartOfRsrc,$ImageBase,$ResVirtualAddress;
+  $f=fopen($filename,"r");
+  $MZ=fread($f,2);
+  if($MZ!="MZ") NotValidExe();
+  fseek($f,60);
+  $OffsetToNewHeader=freaddword($f);
+  fseek($f,$OffsetToNewHeader);
+  $PE=fread($f,2);
+  if($PE!="PE") NotValidExe();
+  fread($f,4);
+  $NumberOfSections=freadword($f);
+  fseek($f,ftell($f)+12);
+  $SizeOfOptionalHeader=freadword($f);
+  $PosMagic=ftell($f)+2;
+  fseek($f,$PosMagic+$SizeOfOptionalHeader);
+
+  for($p=0;$p<$NumberOfSections;$p++):
+    $SectionName[$p]=trim(fread($f,8));
+    $VirtualSize[$p]=freaddword($f);
+    $VirtualAddress[$p]=freaddword($f);
+    $PhysicalSize[$p]=freaddword($f);
+    $PhysicalOffset[$p]=freaddword($f);
+    fread($f,16);
+    if($SectionName[$p]==".rsrc"):
+      $ResVirtualAddress=$VirtualAddress[$p];
+      fseek($f,$PhysicalOffset[$p]);
+      $StartOfRsrc=$PhysicalOffset[$p];
+      ReadResDirectoryEntry($R,$PhysicalOffset[$p]);
+      $IconCount=null;
+      $Ikona=null;
+      while (list ($key, $val) = each ($R["Subdir"])):
+        if($key==14):
+          $r=0;
+          while (list ($key2, $val2) = each ($R["Subdir"][$key]["Subdir"])):
+             while (list ($key3, $val3) = each ($R["Subdir"][$key]["Subdir"][$key2]["Subdir"])):
+               fseek($f,$val3["DataOffset"]);
+               $Reserved=freadword($f);
+               $Type=freadword($f);
+               $ic=freadword($f);
+               $IconCount[]=$ic;
+               for($s=0;$s<$ic;$s++)
+                {
+                 $Ikona[$r][$s]["Width"]=freadbyte($f);
+                 $Ikona[$r][$s]["Height"]=freadbyte($f);
+                 $Ikona[$r][$s]["ColorCount"]=freadword($f);
+                 $Ikona[$r][$s]["Planes"]=freadword($f);
+                 $Ikona[$r][$s]["BitCount"]=freadword($f);
+                 $Ikona[$r][$s]["BytesInRes"]=freaddword($f);
+                 $Ikona[$r][$s]["IconId"]=freadword($f);
+                };
+               fseek($f,$val3["DataOffset"]);
+               $r++;
+             endwhile;
+          endwhile;
+        endif;
+      endwhile;
+
+      reset ($R["Subdir"]);
+
+      while (list ($key, $val) = each ($R["Subdir"])):
+        if($key==3):
+          while (list ($key2, $val2) = each ($R["Subdir"][$key]["Subdir"])):
+          for($r=0;$r<count($Ikona);$r++):
+           for($s=0;$s<count($Ikona[$r]);$s++):
+             while (list ($key3, $val3) = each ($R["Subdir"][$key]["Subdir"][$Ikona[$r][$s]["IconId"]]["Subdir"])):
+               if(($iconIndex==$r)or($iconIndex==-1)or((is_array($iconIndex))and(in_array($r,$iconIndex)))):
+                 fseek($f,$val3["DataOffset"]);
+                 $Ikona[$r][$s]["Data"]=fread($f,$val3["DataSize"]);
+                 $Ikona[$r][$s]["DataSize"]=$val3["DataSize"];
+               endif;
+             endwhile;
+           endfor;
+           endfor;
+          endwhile;
+        endif;
+      endwhile;
+      $ok=false;
+      for($r=0;$r<count($Ikona);$r++):
+        if(($iconIndex==$r)or($iconIndex==-1)or((is_array($iconIndex))and(in_array($r,$iconIndex)))):
+          $savefile=$icoFileNameOrPath;
+          if($icoFileNameOrPath=="")
+           {
+             $savefile="$r.ico";
+           }
+           else
+           {
+            if(($iconIndex==-1)or(is_array($iconIndex)))
+              $savefile=$icoFileNameOrPath."$r.ico";
+           };
+          $f2=fopen($savefile,"w");
+          fwrite($f2,inttoword(0));
+          fwrite($f2,inttoword(1));
+          fwrite($f2,inttoword(count($Ikona[$r])));
+          $Offset=6+16*count($Ikona[$r]);
+          for($s=0;$s<count($Ikona[$r]);$s++):
+            fwrite($f2,inttobyte($Ikona[$r][$s]["Width"]));
+            fwrite($f2,inttobyte($Ikona[$r][$s]["Height"]));
+            fwrite($f2,inttoword($Ikona[$r][$s]["ColorCount"]));
+            fwrite($f2,inttoword($Ikona[$r][$s]["Planes"]));
+            fwrite($f2,inttoword($Ikona[$r][$s]["BitCount"]));
+            fwrite($f2,inttodword($Ikona[$r][$s]["BytesInRes"]));
+            fwrite($f2,inttodword($Offset));
+            $Offset+=$Ikona[$r][$s]["DataSize"];
+          endfor;
+          for($s=0;$s<count($Ikona[$r]);$s++):
+            fwrite($f2,$Ikona[$r][$s]["Data"]);
+          endfor;
+          fclose($f2);
+          $ok=true;
+        endif;
+      endfor;
+      return $ok;
+    endif;
+  endfor;
+
+  fclose($f);
+};
+
+function ReadResDirectoryEntry(&$parentRes,$offset)
+{
+global $f,$StartOfRsrc,$ImageBase,$ResVirtualAddress;
+$lastPos=ftell($f);
+$Res=null;
+fseek($f,$offset);
+//IMAGE_RESOURCE_DIRECTORY
+      $Characteristics=freaddword($f);
+      $TimeDateStamp=freaddword($f);
+      $MajorVersion=freadword($f);
+      $MinorVersion=freadword($f);
+      $NumberOfNamedEntries=freadword($f);
+      $NumberOfIdEntries=freadword($f);
+      for($q=0;$q<$NumberOfNamedEntries+$NumberOfIdEntries;$q++):
+        //IMAGE_RESOURCE_DIRECTORY_ENTRY
+        $ResName=freaddword($f);
+        $lastPos2=ftell($f);
+        if($ResName>=0x80000000):
+          //String Name
+          $ResNameOffset=$ResName-0x80000000;
+          fseek($f,$StartOfRsrc+$ResNameOffset);
+          $StringLength=freadword($f);
+          $Identificator=(fread($f,$StringLength*2));
+          fseek($f,$lastPos2);
+        else:
+          //Integer Id
+          $Identificator=$ResName;
+        endif;
+
+        $ResOffsetToData=freaddword($f);
+        if($ResOffsetToData>=0x80000000):
+          $SubResOffset=$ResOffsetToData-0x80000000;
+          ReadResDirectoryEntry($Res["$Identificator"],$StartOfRsrc+$SubResOffset);
+        else:
+          $RawDataOffset=$ResOffsetToData;
+          $lastPos2=ftell($f);
+          fseek($f,$StartOfRsrc+$RawDataOffset);
+          //IMAGE_RESOURCE_DATA_ENTRY
+          $OffsetToData=freaddword($f);
+          $Res["$Identificator"]["DataOffset"]=$StartOfRsrc-$ResVirtualAddress+$OffsetToData;
+          $Res["$Identificator"]["DataSize"]=freaddword($f);
+          $CodePage=freaddword($f);
+          $Reserved=freaddword($f);
+          fseek($f,$lastPos2);
+        endif;
+      endfor;
+fseek($f,$lastPos);
+$parentRes["Subdir"]=$Res;
+};
+//------------------------
 
 /*
 *------------------------------------------------------------
@@ -591,13 +820,11 @@ if($BitCount>=24)
    $byte=bindec(substr($bOut,$p,8));
    $byteCount++;
    $ret.=inttobyte($byte);
-  // echo dechex($byte)." ";
   };
  $Zbytek=$byteCount%4;
   for($z=0;$z<$Zbytek;$z++)
    {
    $ret.=inttobyte(0xff);
-  // echo "FF ";
    };
  };
 
@@ -723,7 +950,5 @@ function inttoword($n)
  {
  return chr($n & 255).chr(($n >> 8) & 255);
  };
-
-
 
 ?>
