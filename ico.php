@@ -1,47 +1,77 @@
 <?php
-/*
-*------------------------------------------------------------
-*                   ICO Image functions v2.0
-*------------------------------------------------------------
-*                      By JPEXS
-*
-*           Function list:
-*              ImageCreateFromIco - Reads image from a ICO file
-*              ImageCreateFromExeIco - Reads image from icon in EXE file
-*              SaveExeIcon - Saves icon from the exe file
-*              ImageIco - Saves an image to icofile or writes it to output
-*/
+/**
+ * @package com.jpexs.image.ico
+ *
+ * JPEXS ICO Image functions
+ * @version 2.1
+ * @author JPEXS
+ * @copyright (c) JPEXS 2004-2009
+ *
+ * Webpage: http://www.jpexs.com
+ * Email: jpexs@jpexs.com
+ *
+ * If you like my script, you can donate... visit my webpages or email me for more info.
+ *
+ *        Version changes:
+ *                v2.1 - redesigned sourcecode, phpdoc included, all internal functions and global variables have prefix "jpexs_"
+ *                v2.0 - For icons with Alpha channel now you can set background color
+ *                     - ImageCreateFromExeIco added
+ *                     - Fixed ICO_MAX_SIZE and ICO_MAX_COLOR values
+ *
+ * TODO list:
+ *      - better error handling
+ *      - class encapsulation
+ * License:
+ *      - you can freely use it
+ *      - you can freely distribute sourcecode
+ *      - you can freely modify it as long as you leave my copyright/author info in source code
+ *      - if you developing closesource application, you should add my name at least to "about" page of your web application
+ *      - if you create an amazing modification, please contact me... I can publish link to your webpage if you're interested...
+ *      - if you want to use my script in commercial application for earning money, you should make a donation to me first
+ */
 
+/** TrueColor images constant  */
+define("ICO_TRUE_COLOR", 0x1000000);
+/** XPColor images constant (Alpha channel) */
+define("ICO_XP_COLOR", 4294967296);
+/** Image with maximum colors */
+define("ICO_MAX_COLOR", -2);
+/** Image with maximal size */
+define("ICO_MAX_SIZE", -2);
+
+
+/** TrueColor images constant
+ * @deprecated Deprecated since version 2.1, please use ICO_ constants
+ */
 define("TRUE_COLOR", 0x1000000);
+/** XPColor images constant (Alpha channel)
+ * @deprecated Deprecated since version 2.1, please use ICO_ constants
+ */
 define("XP_COLOR", 4294967296);
+/** Image with maximum colors
+ * @deprecated Deprecated since version 2.1, please use ICO_ constants
+ */
 define("MAX_COLOR", -2);
+/** Image with maximal size
+ * @deprecated Deprecated since version 2.1, please use ICO_ constants
+ */
 define("MAX_SIZE", -2);
 
-/*
-        Version changes:
-                v2.0 - For icons with Alpha channel now you can set background color
-                     - ImageCreateFromExeIco added
-                     - Fixed MAX_SIZE and MAX_COLOR values
-*/
 
-/*
-*------------------------------------------------------------
-*                    ImageCreateFromIco
-*------------------------------------------------------------
-*            - Reads image from a ICO file
-*
-*         Parameters:  $filename - Target ico file to load
-*                 $icoColorCount - Icon color count (For multiple icons ico file)
-*                                - 2,16,256, TRUE_COLOR or XP_COLOR
-*                       $icoSize - Icon width       (For multiple icons ico file)
-*  $AlphaBgR,$AlphaBgG,$AlphaBgB - Background color for alpha-channel images (Default is White)
-*            Returns: Image ID
-*/
-
-
-function ImageCreateFromIco($filename,$icoColorCount=16,$icoSize=16,$AlphaBgR=255,$AlphaBgG=255,$AlphaBgB=255)
+/**
+ * Reads image from a ICO file
+ *
+ * @param string $filename Target ico file to load
+ * @param int $icoColorCount Icon color count (For multiple icons ico file) - 2,16,256, ICO_TRUE_COLOR, ICO_XP_COLOR or ICO_MAX_COLOR
+ * @param int $icoSize Icon width (For multiple icons ico file) or ICO_MAX_SIZE
+ * @param int $alphaBgR Background color R value for alpha-channel images (Default is White)
+ * @param int $alphaBgG Background color G value for alpha-channel images (Default is White)
+ * @param int $alphaBgB Background color B value for alpha-channel images (Default is White)
+ * @return resource Image resource
+ */
+function imageCreateFromIco($filename,$icoColorCount=16,$icoSize=16,$alphaBgR=255,$alphaBgG=255,$alphaBgB=255)
 {
-$Ikona=GetIconsInfo($filename);
+$Ikona=jpexs_GetIconsInfo($filename);
 
 $IconID=-1;
 
@@ -58,13 +88,13 @@ for($p=0;$p<count($Ikona);$p++)
 {
 
 if(($ColMax==-1)or($Ikona[$p]["NumberOfColors"]>=$Ikona[$ColMax]["NumberOfColors"]))
-if(($icoSize==$Ikona[$p]["Width"])or($icoSize==MAX_SIZE))
+if(($icoSize==$Ikona[$p]["Width"])or($icoSize==ICO_MAX_SIZE))
  {
   $ColMax=$p;
  };
 
 if(($SizeMax==-1)or($Ikona[$p]["Width"]>=$Ikona[$SizeMax]["Width"]))
-if(($icoColorCount==$Ikona[$p]["NumberOfColors"])or($icoColorCount==MAX_COLOR))
+if(($icoColorCount==$Ikona[$p]["NumberOfColors"])or($icoColorCount==ICO_MAX_COLOR))
  {
    $SizeMax=$p;
  };
@@ -78,19 +108,19 @@ if($Ikona[$p]["Width"]==$icoSize)
  };
 };
 
-  if($icoColorCount==MAX_COLOR) $IconID=$ColMax;
-  if($icoSize==MAX_SIZE) $IconID=$SizeMax;
+  if($icoColorCount==ICO_MAX_COLOR) $IconID=$ColMax;
+  if($icoSize==ICO_MAX_SIZE) $IconID=$SizeMax;
 
 $ColName=$icoColorCount;
 
-if($icoSize==MAX_SIZE) $icoSize="Max";
-if($ColName==TRUE_COLOR) $ColName="True";
-if($ColName==XP_COLOR) $ColName="XP";
-if($ColName==MAX_COLOR) $ColName="Max";
+if($icoSize==ICO_MAX_SIZE) $icoSize="Max";
+if($ColName==ICO_TRUE_COLOR) $ColName="True";
+if($ColName==ICO_XP_COLOR) $ColName="XP";
+if($ColName==ICO_MAX_COLOR) $ColName="Max";
 if($IconID==-1) die("Icon with $ColName colors and $icoSize x $icoSize size doesn't exist in this file!");
 
 
-ReadIcon($filename,$IconID,$Ikona);
+jpexs_readIcon($filename,$IconID,$Ikona);
 
  $biBitCount=$Ikona[$IconID]["Info"]["BitsPerPixel"];
 
@@ -112,7 +142,7 @@ if($Ikona[$IconID]["BitCount"]>=24)
 {
 $img=imagecreatetruecolor($Ikona[$IconID]["Width"],$Ikona[$IconID]["Height"]);
 if($Ikona[$IconID]["BitCount"]==32):
-  $backcolor=imagecolorallocate($img,$AlphaBgR,$AlphaBgG,$AlphaBgB);
+  $backcolor=imagecolorallocate($img,$alphaBgR,$alphaBgG,$alphaBgB);
   imagefilledrectangle($img,0,0,$Ikona[$IconID]["Width"]-1,$Ikona[$IconID]["Height"]-1,$backcolor);
 endif;
 for($y=0;$y<$Ikona[$IconID]["Height"];$y++)
@@ -195,32 +225,32 @@ return $img;
 
 
 
-function ReadIcon($filename,$id,&$Ikona)
+function jpexs_readIcon($filename,$id,&$Ikona)
 {
-global $CurrentBit;
+global $jpexs_currentBit;
 
 $f=fopen($filename,"rb");
 
 fseek($f,6+$id*16);
-  $Width=freadbyte($f);
-  $Height=freadbyte($f);
+  $Width=jpexs_freadbyte($f);
+  $Height=jpexs_freadbyte($f);
 fseek($f,6+$id*16+12);
-$OffSet=freaddword($f);
+$OffSet=jpexs_freaddword($f);
 fseek($f,$OffSet);
 
 $p=$id;
 
-  $Ikona[$p]["Info"]["HeaderSize"]=freadlngint($f);
-  $Ikona[$p]["Info"]["ImageWidth"]=freadlngint($f);
-  $Ikona[$p]["Info"]["ImageHeight"]=freadlngint($f);
-  $Ikona[$p]["Info"]["NumberOfImagePlanes"]=freadword($f);
-  $Ikona[$p]["Info"]["BitsPerPixel"]=freadword($f);
-  $Ikona[$p]["Info"]["CompressionMethod"]=freadlngint($f);
-  $Ikona[$p]["Info"]["SizeOfBitmap"]=freadlngint($f);
-  $Ikona[$p]["Info"]["HorzResolution"]=freadlngint($f);
-  $Ikona[$p]["Info"]["VertResolution"]=freadlngint($f);
-  $Ikona[$p]["Info"]["NumColorUsed"]=freadlngint($f);
-  $Ikona[$p]["Info"]["NumSignificantColors"]=freadlngint($f);
+  $Ikona[$p]["Info"]["HeaderSize"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["ImageWidth"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["ImageHeight"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["NumberOfImagePlanes"]=jpexs_freadword($f);
+  $Ikona[$p]["Info"]["BitsPerPixel"]=jpexs_freadword($f);
+  $Ikona[$p]["Info"]["CompressionMethod"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["SizeOfBitmap"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["HorzResolution"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["VertResolution"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["NumColorUsed"]=jpexs_freadlngint($f);
+  $Ikona[$p]["Info"]["NumSignificantColors"]=jpexs_freadlngint($f);
 
 
  $biBitCount=$Ikona[$p]["Info"]["BitsPerPixel"];
@@ -232,10 +262,10 @@ $p=$id;
 
   for($b=0;$b<$barev;$b++)
     {
-    $Ikona[$p]["Paleta"][$b]["b"]=freadbyte($f);
-    $Ikona[$p]["Paleta"][$b]["g"]=freadbyte($f);
-    $Ikona[$p]["Paleta"][$b]["r"]=freadbyte($f);
-    freadbyte($f);
+    $Ikona[$p]["Paleta"][$b]["b"]=jpexs_freadbyte($f);
+    $Ikona[$p]["Paleta"][$b]["g"]=jpexs_freadbyte($f);
+    $Ikona[$p]["Paleta"][$b]["r"]=jpexs_freadbyte($f);
+    jpexs_freadbyte($f);
     };
 
 $Zbytek=(4-ceil(($Width/(8/$biBitCount)))%4)%4;
@@ -243,16 +273,16 @@ $Zbytek=(4-ceil(($Width/(8/$biBitCount)))%4)%4;
 
 for($y=$Height-1;$y>=0;$y--)
     {
-     $CurrentBit=0;
+     $jpexs_currentBit=0;
      for($x=0;$x<$Width;$x++)
       {
-         $C=freadbits($f,$biBitCount);
+         $C=jpexs_freadbits($f,$biBitCount);
          $Ikona[$p]["Data"][$x][$y]=$C;
       };
 
-    if($CurrentBit!=0) {freadbyte($f);};
+    if($jpexs_currentBit!=0) {jpexs_freadbyte($f);};
     for($g=0;$g<$Zbytek;$g++)
-     freadbyte($f);
+     jpexs_freadbyte($f);
      };
 
 }
@@ -264,15 +294,15 @@ elseif($biBitCount==24)
     {
      for($x=0;$x<$Width;$x++)
       {
-       $B=freadbyte($f);
-       $G=freadbyte($f);
-       $R=freadbyte($f);
+       $B=jpexs_freadbyte($f);
+       $G=jpexs_freadbyte($f);
+       $R=jpexs_freadbyte($f);
        $Ikona[$p]["Data"][$x][$y]["r"]=$R;
        $Ikona[$p]["Data"][$x][$y]["g"]=$G;
        $Ikona[$p]["Data"][$x][$y]["b"]=$B;
       }
     for($z=0;$z<$Zbytek;$z++)
-     freadbyte($f);
+     jpexs_freadbyte($f);
    };
 }
 elseif($biBitCount==32)
@@ -283,17 +313,17 @@ elseif($biBitCount==32)
     {
      for($x=0;$x<$Width;$x++)
       {
-       $B=freadbyte($f);
-       $G=freadbyte($f);
-       $R=freadbyte($f);
-       $Alpha=freadbyte($f);
+       $B=jpexs_freadbyte($f);
+       $G=jpexs_freadbyte($f);
+       $R=jpexs_freadbyte($f);
+       $Alpha=jpexs_freadbyte($f);
        $Ikona[$p]["Data"][$x][$y]["r"]=$R;
        $Ikona[$p]["Data"][$x][$y]["g"]=$G;
        $Ikona[$p]["Data"][$x][$y]["b"]=$B;
        $Ikona[$p]["Data"][$x][$y]["alpha"]=$Alpha;
       }
     for($z=0;$z<$Zbytek;$z++)
-     freadbyte($f);
+     jpexs_freadbyte($f);
    };
 };
 
@@ -302,15 +332,15 @@ elseif($biBitCount==32)
 $Zbytek=(4-ceil(($Width/(8)))%4)%4;
 for($y=$Height-1;$y>=0;$y--)
     {
-     $CurrentBit=0;
+     $jpexs_currentBit=0;
      for($x=0;$x<$Width;$x++)
       {
-         $C=freadbits($f,1);
+         $C=jpexs_freadbits($f,1);
          $Ikona[$p]["Maska"][$x][$y]=$C;
       };
-    if($CurrentBit!=0) {freadbyte($f);};
+    if($jpexs_currentBit!=0) {jpexs_freadbyte($f);};
     for($g=0;$g<$Zbytek;$g++)
-     freadbyte($f);
+     jpexs_freadbyte($f);
      };
 //--------------
 
@@ -318,32 +348,32 @@ fclose($f);
 
 };
 
-function GetIconsInfo($filename)
+function jpexs_GetIconsInfo($filename)
 {
-global $CurrentBit;
+global $jpexs_currentBit;
 
 $f=fopen($filename,"rb");
 
-$Reserved=freadword($f);
-$Type=freadword($f);
-$Count=freadword($f);
+$Reserved=jpexs_freadword($f);
+$Type=jpexs_freadword($f);
+$Count=jpexs_freadword($f);
 for($p=0;$p<$Count;$p++)
  {
-  $Ikona[$p]["Width"]=freadbyte($f);
-  $Ikona[$p]["Height"]=freadbyte($f);
-  $Ikona[$p]["ColorCount"]=freadword($f);
+  $Ikona[$p]["Width"]=jpexs_freadbyte($f);
+  $Ikona[$p]["Height"]=jpexs_freadbyte($f);
+  $Ikona[$p]["ColorCount"]=jpexs_freadword($f);
  if($Ikona[$p]["ColorCount"]==0) $Ikona[$p]["ColorCount"]=256;
-  $Ikona[$p]["Planes"]=freadword($f);
-  $Ikona[$p]["BitCount"]=freadword($f);
-  $Ikona[$p]["BytesInRes"]=freaddword($f);
-  $Ikona[$p]["ImageOffset"]=freaddword($f);
+  $Ikona[$p]["Planes"]=jpexs_freadword($f);
+  $Ikona[$p]["BitCount"]=jpexs_freadword($f);
+  $Ikona[$p]["BytesInRes"]=jpexs_freaddword($f);
+  $Ikona[$p]["ImageOffset"]=jpexs_freaddword($f);
  };
 
 if(!feof($f)):
   for($p=0;$p<$Count;$p++)
    {
     fseek($f,$Ikona[$p]["ImageOffset"]+14);
-    $Ikona[$p]["Info"]["BitsPerPixel"]=freadword($f);
+    $Ikona[$p]["Info"]["BitsPerPixel"]=jpexs_freadword($f);
    };
 endif;
 fclose($f);
@@ -353,78 +383,70 @@ return $Ikona;
 
 
 
-/*
-*------------------------------------------------------------
-*                    ImageCreateFromExeIco
-*------------------------------------------------------------
-*            - Reads image from a icon in exe file
-*
-*         Parameters:  $filename - Target exefile
-*                      $icoIndex - Index of the icon in exefile
-*                 $icoColorCount - Icon color count (For multiple icons ico file)
-*                                - 2,16,256, TRUE_COLOR or XP_COLOR
-*                       $icoSize - Icon width       (For multiple icons ico file)
-*  $AlphaBgR,$AlphaBgG,$AlphaBgB - Background color for alpha-channel images (Default is White)
-*            Returns: Image ID or empty string if failed
-*/
-function ImageCreateFromExeIco($filename,$icoIndex,$icoColorCount=16,$icoSize=16,$AlphaBgR=255,$AlphaBgG=255,$AlphaBgB=255)
+/**
+ * Reads image from a icon in exe file
+ * @param string $filename Target exefile
+ * @param int $icoIndex Index of the icon in exefile
+ * @param int $icoColorCount Icon color count (For multiple icons ico file) - 2,16,256, ICO_TRUE_COLOR, ICO_XP_COLOR or ICO_MAX_COLOR
+ * @param int $icoSize Icon width (For multiple icons ico file) or ICO_MAX_SIZE
+ * @param int $alphaBgR Background color R value for alpha-channel images (Default is White)
+ * @param int $alphaBgG Background color G value for alpha-channel images (Default is White)
+ * @param int $alphaBgB Background color B value for alpha-channel images (Default is White)
+ * @return resource Image resource or false on error
+ */
+function imageCreateFromExeIco($filename,$icoIndex,$icoColorCount=16,$icoSize=16,$alphaBgR=255,$alphaBgG=255,$alphaBgB=255)
 {
- $ok=SaveExeIcon($filename,"icotemp.dat",$icoIndex);
+ $ok=saveExeIcon($filename,"icotemp.dat",$icoIndex);
  if(!$ok):
-  $im="";
+  $im=false;
  else:
-   $im=ImageCreateFromIco("icotemp.dat",$icoColorCount,$icoSize,$AlphaBgR,$AlphaBgG,$AlphaBgB);
+   $im=imageCreateFromIco("icotemp.dat",$icoColorCount,$icoSize,$alphaBgR,$alphaBgG,$alphaBgB);
    unlink("icotemp.dat");
  endif;
  return $im;
 };
 
 
-/*
-*------------------------------------------------------------
-*                    SaveExeIcon
-*------------------------------------------------------------
-*            - Saves icon from the exe file
-*
-*         Parameters:  $filename - Target exefile
-*             $icoFileNameOrPath - Filename to save ico or path (Default "")
-*                                  (path if you want more than 1 icon)
-*                                  (If "", the filename is "$icoIndex.ico")
-*
-*                      $icoIndex - Index(es) of the icon in exefile  (Default -1)
-*                                  (If -1, all icons are saved)
-*                                  (Can be an array of indexes!)
-*/
-function SaveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1/*-1 for all,or can be array*/)
+/**
+ * Saves icon(s) from the exe file
+ * @global int $jpexs_StartOfRsrc Internal reserved variable
+ * @global int $jpexs_ImageBase Internal reserved variable
+ * @global int $jpexs_ResVirtualAddress Internal reserved variable
+ * @param string $filename Target exefile
+ * @param string $icoFileNameOrPath Filename to save ico or path (Default "") Path if you want more than 1 icon. If "", the filename is "$icoIndex.ico"
+ * @param int|array $iconIndex Index(es) of the icon in exefile  (Default -1) If -1, all icons are saved, Can be an array of indexes.
+ * @return boolean True on successful save
+ */
+function saveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1) /*-1 for all,or can be array*/
 {
-  global $f,$StartOfRsrc,$ImageBase,$ResVirtualAddress;
-  $f=fopen($filename,"r");
-  $MZ=fread($f,2);
+  global $jpexs_f,$jpexs_StartOfRsrc,$jpexs_ImageBase,$jpexs_ResVirtualAddress;
+  $jpexs_f=fopen($filename,"r");
+  $MZ=fread($jpexs_f,2);
   if($MZ!="MZ") NotValidExe();
-  fseek($f,60);
-  $OffsetToNewHeader=freaddword($f);
-  fseek($f,$OffsetToNewHeader);
-  $PE=fread($f,2);
+  fseek($jpexs_f,60);
+  $OffsetToNewHeader=jpexs_freaddword($jpexs_f);
+  fseek($jpexs_f,$OffsetToNewHeader);
+  $PE=fread($jpexs_f,2);
   if($PE!="PE") NotValidExe();
-  fread($f,4);
-  $NumberOfSections=freadword($f);
-  fseek($f,ftell($f)+12);
-  $SizeOfOptionalHeader=freadword($f);
-  $PosMagic=ftell($f)+2;
-  fseek($f,$PosMagic+$SizeOfOptionalHeader);
+  fread($jpexs_f,4);
+  $NumberOfSections=jpexs_freadword($jpexs_f);
+  fseek($jpexs_f,ftell($jpexs_f)+12);
+  $SizeOfOptionalHeader=jpexs_freadword($jpexs_f);
+  $PosMagic=ftell($jpexs_f)+2;
+  fseek($jpexs_f,$PosMagic+$SizeOfOptionalHeader);
 
   for($p=0;$p<$NumberOfSections;$p++):
-    $SectionName[$p]=trim(fread($f,8));
-    $VirtualSize[$p]=freaddword($f);
-    $VirtualAddress[$p]=freaddword($f);
-    $PhysicalSize[$p]=freaddword($f);
-    $PhysicalOffset[$p]=freaddword($f);
-    fread($f,16);
+    $SectionName[$p]=trim(fread($jpexs_f,8));
+    $VirtualSize[$p]=jpexs_freaddword($jpexs_f);
+    $VirtualAddress[$p]=jpexs_freaddword($jpexs_f);
+    $PhysicalSize[$p]=jpexs_freaddword($jpexs_f);
+    $PhysicalOffset[$p]=jpexs_freaddword($jpexs_f);
+    fread($jpexs_f,16);
     if($SectionName[$p]==".rsrc"):
-      $ResVirtualAddress=$VirtualAddress[$p];
-      fseek($f,$PhysicalOffset[$p]);
-      $StartOfRsrc=$PhysicalOffset[$p];
-      ReadResDirectoryEntry($R,$PhysicalOffset[$p]);
+      $jpexs_ResVirtualAddress=$VirtualAddress[$p];
+      fseek($jpexs_f,$PhysicalOffset[$p]);
+      $jpexs_StartOfRsrc=$PhysicalOffset[$p];
+      jpexs_readResDirectoryEntry($R,$PhysicalOffset[$p]);
       $IconCount=null;
       $Ikona=null;
       while (list ($key, $val) = each ($R["Subdir"])):
@@ -432,22 +454,22 @@ function SaveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1/*-1 for all,o
           $r=0;
           while (list ($key2, $val2) = each ($R["Subdir"][$key]["Subdir"])):
              while (list ($key3, $val3) = each ($R["Subdir"][$key]["Subdir"][$key2]["Subdir"])):
-               fseek($f,$val3["DataOffset"]);
-               $Reserved=freadword($f);
-               $Type=freadword($f);
-               $ic=freadword($f);
+               fseek($jpexs_f,$val3["DataOffset"]);
+               $Reserved=jpexs_freadword($jpexs_f);
+               $Type=jpexs_freadword($jpexs_f);
+               $ic=jpexs_freadword($jpexs_f);
                $IconCount[]=$ic;
                for($s=0;$s<$ic;$s++)
                 {
-                 $Ikona[$r][$s]["Width"]=freadbyte($f);
-                 $Ikona[$r][$s]["Height"]=freadbyte($f);
-                 $Ikona[$r][$s]["ColorCount"]=freadword($f);
-                 $Ikona[$r][$s]["Planes"]=freadword($f);
-                 $Ikona[$r][$s]["BitCount"]=freadword($f);
-                 $Ikona[$r][$s]["BytesInRes"]=freaddword($f);
-                 $Ikona[$r][$s]["IconId"]=freadword($f);
+                 $Ikona[$r][$s]["Width"]=jpexs_freadbyte($jpexs_f);
+                 $Ikona[$r][$s]["Height"]=jpexs_freadbyte($jpexs_f);
+                 $Ikona[$r][$s]["ColorCount"]=jpexs_freadword($jpexs_f);
+                 $Ikona[$r][$s]["Planes"]=jpexs_freadword($jpexs_f);
+                 $Ikona[$r][$s]["BitCount"]=jpexs_freadword($jpexs_f);
+                 $Ikona[$r][$s]["BytesInRes"]=jpexs_freaddword($jpexs_f);
+                 $Ikona[$r][$s]["IconId"]=jpexs_freadword($jpexs_f);
                 };
-               fseek($f,$val3["DataOffset"]);
+               fseek($jpexs_f,$val3["DataOffset"]);
                $r++;
              endwhile;
           endwhile;
@@ -463,8 +485,8 @@ function SaveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1/*-1 for all,o
            for($s=0;$s<count($Ikona[$r]);$s++):
              while (list ($key3, $val3) = each ($R["Subdir"][$key]["Subdir"][$Ikona[$r][$s]["IconId"]]["Subdir"])):
                if(($iconIndex==$r)or($iconIndex==-1)or((is_array($iconIndex))and(in_array($r,$iconIndex)))):
-                 fseek($f,$val3["DataOffset"]);
-                 $Ikona[$r][$s]["Data"]=fread($f,$val3["DataSize"]);
+                 fseek($jpexs_f,$val3["DataOffset"]);
+                 $Ikona[$r][$s]["Data"]=fread($jpexs_f,$val3["DataSize"]);
                  $Ikona[$r][$s]["DataSize"]=$val3["DataSize"];
                endif;
              endwhile;
@@ -487,18 +509,18 @@ function SaveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1/*-1 for all,o
               $savefile=$icoFileNameOrPath."$r.ico";
            };
           $f2=fopen($savefile,"w");
-          fwrite($f2,inttoword(0));
-          fwrite($f2,inttoword(1));
-          fwrite($f2,inttoword(count($Ikona[$r])));
+          fwrite($f2,jpexs_inttoword(0));
+          fwrite($f2,jpexs_inttoword(1));
+          fwrite($f2,jpexs_inttoword(count($Ikona[$r])));
           $Offset=6+16*count($Ikona[$r]);
           for($s=0;$s<count($Ikona[$r]);$s++):
-            fwrite($f2,inttobyte($Ikona[$r][$s]["Width"]));
-            fwrite($f2,inttobyte($Ikona[$r][$s]["Height"]));
-            fwrite($f2,inttoword($Ikona[$r][$s]["ColorCount"]));
-            fwrite($f2,inttoword($Ikona[$r][$s]["Planes"]));
-            fwrite($f2,inttoword($Ikona[$r][$s]["BitCount"]));
-            fwrite($f2,inttodword($Ikona[$r][$s]["BytesInRes"]));
-            fwrite($f2,inttodword($Offset));
+            fwrite($f2,jpexs_inttobyte($Ikona[$r][$s]["Width"]));
+            fwrite($f2,jpexs_inttobyte($Ikona[$r][$s]["Height"]));
+            fwrite($f2,jpexs_inttoword($Ikona[$r][$s]["ColorCount"]));
+            fwrite($f2,jpexs_inttoword($Ikona[$r][$s]["Planes"]));
+            fwrite($f2,jpexs_inttoword($Ikona[$r][$s]["BitCount"]));
+            fwrite($f2,jpexs_inttodword($Ikona[$r][$s]["BytesInRes"]));
+            fwrite($f2,jpexs_inttodword($Offset));
             $Offset+=$Ikona[$r][$s]["DataSize"];
           endfor;
           for($s=0;$s<count($Ikona[$r]);$s++):
@@ -512,88 +534,77 @@ function SaveExeIcon($filename,$icoFileNameOrPath="",$iconIndex=-1/*-1 for all,o
     endif;
   endfor;
 
-  fclose($f);
+  fclose($jpexs_f);
 };
 
-function ReadResDirectoryEntry(&$parentRes,$offset)
+/**
+ * Internal function for reading exe icons
+ */
+function jpexs_readResDirectoryEntry(&$parentRes,$offset)
 {
-global $f,$StartOfRsrc,$ImageBase,$ResVirtualAddress;
-$lastPos=ftell($f);
+global $jpexs_f,$jpexs_StartOfRsrc,$jpexs_ImageBase,$jpexs_ResVirtualAddress;
+$lastPos=ftell($jpexs_f);
 $Res=null;
-fseek($f,$offset);
+fseek($jpexs_f,$offset);
 //IMAGE_RESOURCE_DIRECTORY
-      $Characteristics=freaddword($f);
-      $TimeDateStamp=freaddword($f);
-      $MajorVersion=freadword($f);
-      $MinorVersion=freadword($f);
-      $NumberOfNamedEntries=freadword($f);
-      $NumberOfIdEntries=freadword($f);
+      $Characteristics=jpexs_freaddword($jpexs_f);
+      $TimeDateStamp=jpexs_freaddword($jpexs_f);
+      $MajorVersion=jpexs_freadword($jpexs_f);
+      $MinorVersion=jpexs_freadword($jpexs_f);
+      $NumberOfNamedEntries=jpexs_freadword($jpexs_f);
+      $NumberOfIdEntries=jpexs_freadword($jpexs_f);
       for($q=0;$q<$NumberOfNamedEntries+$NumberOfIdEntries;$q++):
         //IMAGE_RESOURCE_DIRECTORY_ENTRY
-        $ResName=freaddword($f);
-        $lastPos2=ftell($f);
+        $ResName=jpexs_freaddword($jpexs_f);
+        $lastPos2=ftell($jpexs_f);
         if($ResName>=0x80000000):
           //String Name
           $ResNameOffset=$ResName-0x80000000;
-          fseek($f,$StartOfRsrc+$ResNameOffset);
-          $StringLength=freadword($f);
-          $Identificator=(fread($f,$StringLength*2));
-          fseek($f,$lastPos2);
+          fseek($jpexs_f,$jpexs_StartOfRsrc+$ResNameOffset);
+          $StringLength=jpexs_freadword($jpexs_f);
+          $Identificator=(fread($jpexs_f,$StringLength*2));
+          fseek($jpexs_f,$lastPos2);
         else:
           //Integer Id
           $Identificator=$ResName;
         endif;
 
-        $ResOffsetToData=freaddword($f);
+        $ResOffsetToData=jpexs_freaddword($jpexs_f);
         if($ResOffsetToData>=0x80000000):
           $SubResOffset=$ResOffsetToData-0x80000000;
-          ReadResDirectoryEntry($Res["$Identificator"],$StartOfRsrc+$SubResOffset);
+          jpexs_readResDirectoryEntry($Res["$Identificator"],$jpexs_StartOfRsrc+$SubResOffset);
         else:
           $RawDataOffset=$ResOffsetToData;
-          $lastPos2=ftell($f);
-          fseek($f,$StartOfRsrc+$RawDataOffset);
+          $lastPos2=ftell($jpexs_f);
+          fseek($jpexs_f,$jpexs_StartOfRsrc+$RawDataOffset);
           //IMAGE_RESOURCE_DATA_ENTRY
-          $OffsetToData=freaddword($f);
-          $Res["$Identificator"]["DataOffset"]=$StartOfRsrc-$ResVirtualAddress+$OffsetToData;
-          $Res["$Identificator"]["DataSize"]=freaddword($f);
-          $CodePage=freaddword($f);
-          $Reserved=freaddword($f);
-          fseek($f,$lastPos2);
+          $OffsetToData=jpexs_freaddword($jpexs_f);
+          $Res["$Identificator"]["DataOffset"]=$jpexs_StartOfRsrc-$jpexs_ResVirtualAddress+$OffsetToData;
+          $Res["$Identificator"]["DataSize"]=jpexs_freaddword($jpexs_f);
+          $CodePage=jpexs_freaddword($jpexs_f);
+          $Reserved=jpexs_freaddword($jpexs_f);
+          fseek($jpexs_f,$lastPos2);
         endif;
       endfor;
-fseek($f,$lastPos);
+fseek($jpexs_f,$lastPos);
 $parentRes["Subdir"]=$Res;
 };
-//------------------------
 
-/*
-*------------------------------------------------------------
-*                       ImageIco
-*------------------------------------------------------------
-*                 - Returns ICO file
-*
-*         Parameters:       $img - Target Image (Can be array of images)
-*                      $filename - Target ico file to save
-*
-*
-* Note: For returning icons to Browser, you have to set header:
-*
-*             header("Content-type: image/x-icon");
-*
-*/
-
-
-function ImageIco($Images/*image or image array*/,$filename="")
+/**
+ * Creates ico file from image resource(s)
+ * @param resource|array $images Target Image resource (Can be array of image resources)
+ * @param string $filename Target ico file to save icon to, If ommited or "", image is written to snadard output - use header("Content-type: image/x-icon"); */
+function imageIco($images,$filename="")
 {
 
-if(is_array($Images))
+if(is_array($images))
 {
-$ImageCount=count($Images);
-$Image=$Images;
+$ImageCount=count($images);
+$Image=$images;
 }
 else
 {
-$Image[0]=$Images;
+$Image[0]=$images;
 $ImageCount=1;
 };
 
@@ -608,9 +619,9 @@ $WriteToFile=true;
 
 $ret="";
 
-$ret.=inttoword(0); //PASSWORD
-$ret.=inttoword(1); //SOURCE
-$ret.=inttoword($ImageCount); //ICONCOUNT
+$ret.=jpexs_inttoword(0); //PASSWORD
+$ret.=jpexs_inttoword(1); //SOURCE
+$ret.=jpexs_inttoword($ImageCount); //ICONCOUNT
 
 
 for($q=0;$q<$ImageCount;$q++)
@@ -638,19 +649,19 @@ if(($ColorCount>16)and($ColorCount<=256)) { $ColorCount=0; $BitCount=8;};
 
 
 //ICONINFO:
-$ret.=inttobyte($Width);//
-$ret.=inttobyte($Height);//
-$ret.=inttobyte($ColorCount);//
-$ret.=inttobyte(0);//RESERVED
+$ret.=jpexs_inttobyte($Width);//
+$ret.=jpexs_inttobyte($Height);//
+$ret.=jpexs_inttobyte($ColorCount);//
+$ret.=jpexs_inttobyte(0);//RESERVED
 
 $Planes=0;
 if($BitCount>=8) $Planes=1;
 
-$ret.=inttoword($f,$Planes);//PLANES
+$ret.=jpexs_inttoword($f,$Planes);//PLANES
 if($BitCount>=8) $WBitCount=$BitCount;
 if($BitCount==4) $WBitCount=0;
 if($BitCount==1) $WBitCount=0;
-$ret.=inttoword($WBitCount);//BITS
+$ret.=jpexs_inttoword($WBitCount);//BITS
 
 $Zbytek=(4-($Width/(8/$BitCount))%4)%4;
 $ZbytekMask=(4-($Width/8)%4)%4;
@@ -661,9 +672,9 @@ $Size=40+($Width/(8/$BitCount)+$Zbytek)*$Height+(($Width/8+$ZbytekMask) * $Heigh
 if($BitCount<24)
  $Size+=pow(2,$BitCount)*4;
 $IconId=1;
-$ret.=inttodword($Size); //SIZE
+$ret.=jpexs_inttodword($Size); //SIZE
 $OffSet=6+16*$ImageCount+$FullSize;
-$ret.=inttodword(6+16*$ImageCount+$FullSize);//OFFSET
+$ret.=jpexs_inttodword(6+16*$ImageCount+$FullSize);//OFFSET
 $FullSize+=$Size;
 //-------------
 
@@ -689,12 +700,12 @@ if(($ColorCount>16)and($ColorCount<=256)) { $ColorCount=0; $BitCount=8;};
 
 
 //ICONS
-$ret.=inttodword(40);//HEADSIZE
-$ret.=inttodword($Width);//
-$ret.=inttodword(2*$Height);//
-$ret.=inttoword(1); //PLANES
-$ret.=inttoword($BitCount);   //
-$ret.=inttodword(0);//Compress method
+$ret.=jpexs_inttodword(40);//HEADSIZE
+$ret.=jpexs_inttodword($Width);//
+$ret.=jpexs_inttodword(2*$Height);//
+$ret.=jpexs_inttoword(1); //PLANES
+$ret.=jpexs_inttoword($BitCount);   //
+$ret.=jpexs_inttodword(0);//Compress method
 
 
 $ZbytekMask=($Width/8)%4;
@@ -702,12 +713,12 @@ $ZbytekMask=($Width/8)%4;
 $Zbytek=($Width/(8/$BitCount))%4;
 $Size=($Width/(8/$BitCount)+$Zbytek)*$Height+(($Width/8+$ZbytekMask) * $Height);
 
-$ret.=inttodword($Size);//SIZE
+$ret.=jpexs_inttodword($Size);//SIZE
 
-$ret.=inttodword(0);//HPIXEL_M
-$ret.=inttodword(0);//V_PIXEL_M
-$ret.=inttodword($ColorCount); //UCOLORS
-$ret.=inttodword(0); //DCOLORS
+$ret.=jpexs_inttodword(0);//HPIXEL_M
+$ret.=jpexs_inttodword(0);//V_PIXEL_M
+$ret.=jpexs_inttodword($ColorCount); //UCOLORS
+$ret.=jpexs_inttodword(0); //DCOLORS
 //---------------
 
 
@@ -722,19 +733,19 @@ if($BitCount<24)
  for($p=0;$p<$ColorTotal;$p++)
   {
    $color=imagecolorsforindex($img,$p);
-   $ret.=inttobyte($color["blue"]);
-   $ret.=inttobyte($color["green"]);
-   $ret.=inttobyte($color["red"]);
-   $ret.=inttobyte(0); //RESERVED
+   $ret.=jpexs_inttobyte($color["blue"]);
+   $ret.=jpexs_inttobyte($color["green"]);
+   $ret.=jpexs_inttobyte($color["red"]);
+   $ret.=jpexs_inttobyte(0); //RESERVED
   };
 
  $CT=$ColorTotal;
  for($p=$ColorTotal;$p<$CC;$p++)
   {
-   $ret.=inttobyte(0);
-   $ret.=inttobyte(0);
-   $ret.=inttobyte(0);
-   $ret.=inttobyte(0); //RESERVED
+   $ret.=jpexs_inttobyte(0);
+   $ret.=jpexs_inttobyte(0);
+   $ret.=jpexs_inttobyte(0);
+   $ret.=jpexs_inttobyte(0); //RESERVED
   };
 };
 
@@ -757,10 +768,10 @@ if($BitCount<=8)
    if($color==-1) $color=0;
    if($color>pow(2,$BitCount)-1) $color=0;
 
-   $bWrite.=decbinx($color,$BitCount);
+   $bWrite.=jpexs_decbinx($color,$BitCount);
    if(strlen($bWrite)==8)
     {
-     $ret.=inttobyte(bindec($bWrite));
+     $ret.=jpexs_inttobyte(bindec($bWrite));
      $bWrite="";
     };
    };
@@ -770,10 +781,10 @@ if($BitCount<=8)
      $sl=strlen($bWrite);
      for($t=0;$t<8-$sl;$t++)
       $sl.="0";
-     $ret.=inttobyte(bindec($bWrite));
+     $ret.=jpexs_inttobyte(bindec($bWrite));
     };
   for($z=0;$z<$Zbytek;$z++)
-   $ret.=inttobyte(0);
+   $ret.=jpexs_inttobyte(0);
  };
 };
 
@@ -786,14 +797,14 @@ if($BitCount>=24)
   for($x=0;$x<$Width;$x++)
    {
    $color=imagecolorsforindex($img,imagecolorat($img,$x,$y));
-   $ret.=inttobyte($color["blue"]);
-   $ret.=inttobyte($color["green"]);
-   $ret.=inttobyte($color["red"]);
+   $ret.=jpexs_inttobyte($color["blue"]);
+   $ret.=jpexs_inttobyte($color["green"]);
+   $ret.=jpexs_inttobyte($color["red"]);
    if($BitCount==32)
-    $ret.=inttobyte(0);//Alpha for XP_COLORS
+    $ret.=jpexs_inttobyte(0);//Alpha for ICO_XP_COLORS
    };
   for($z=0;$z<$Zbytek;$z++)
-   $ret.=inttobyte(0);
+   $ret.=jpexs_inttobyte(0);
  };
 };
 
@@ -819,12 +830,12 @@ if($BitCount>=24)
   {
    $byte=bindec(substr($bOut,$p,8));
    $byteCount++;
-   $ret.=inttobyte($byte);
+   $ret.=jpexs_inttobyte($byte);
   };
  $Zbytek=$byteCount%4;
   for($z=0;$z<$Zbytek;$z++)
    {
-   $ret.=inttobyte(0xff);
+   $ret.=jpexs_inttobyte(0xff);
    };
  };
 
@@ -853,27 +864,27 @@ else
 
 
 /*
-* Helping functions:
+* Internal functions:
 *-------------------------
-*
-* inttobyte($n) - returns chr(n)
-* inttodword($n) - returns dword (n)
-* inttoword($n) - returns word(n)
-* freadbyte($file) - reads 1 byte from $file
-* freadword($file) - reads 2 bytes (1 word) from $file
-* freaddword($file) - reads 4 bytes (1 dword) from $file
-* freadlngint($file) - same as freaddword($file)
-* decbin8($d) - returns binary string of d zero filled to 8
-* RetBits($byte,$start,$len) - returns bits $start->$start+$len from $byte
-* freadbits($file,$count) - reads next $count bits from $file
+* jpexs_inttobyte($n) - returns chr(n)
+* jpexs_inttodword($n) - returns dword (n)
+* jpexs_inttoword($n) - returns word(n)
+* jpexs_freadbyte($file) - reads 1 byte from $file
+* jpexs_freadword($file) - reads 2 bytes (1 word) from $file
+* jpexs_freaddword($file) - reads 4 bytes (1 dword) from $file
+* jpexs_freadlngint($file) - same as freaddword($file)
+* jpexs_decbin8($d) - returns binary string of d zero filled to 8
+* jpexs_RetBits($byte,$start,$len) - returns bits $start->$start+$len from $byte
+* jpexs_freadbits($file,$count) - reads next $count bits from $file
 */
 
-function decbin8($d)
+
+function jpexs_decbin8($d)
 {
-return decbinx($d,8);
+return jpexs_decbinx($d,8);
 };
 
-function decbinx($d,$n)
+function jpexs_decbinx($d,$n)
 {
 $bin=decbin($d);
 $sbin=strlen($bin);
@@ -882,9 +893,9 @@ for($j=0;$j<$n-$sbin;$j++)
 return $bin;
 };
 
-function RetBits($byte,$start,$len)
+function jpexs_retBits($byte,$start,$len)
 {
-$bin=decbin8($byte);
+$bin=jpexs_decbin8($byte);
 $r=bindec(substr($bin,$start,$len));
 return $r;
 
@@ -892,61 +903,61 @@ return $r;
 
 
 
-$CurrentBit=0;
-function freadbits($f,$count)
+$jpexs_currentBit=0;
+function jpexs_freadbits($f,$count)
 {
- global $CurrentBit,$SMode;
- $Byte=freadbyte($f);
- $LastCBit=$CurrentBit;
- $CurrentBit+=$count;
- if($CurrentBit==8)
+ global $jpexs_currentBit,$jpexs_SMode;
+ $Byte=jpexs_freadbyte($f);
+ $LastCBit=$jpexs_currentBit;
+ $jpexs_currentBit+=$count;
+ if($jpexs_currentBit==8)
   {
-   $CurrentBit=0;
+   $jpexs_currentBit=0;
   }
  else
   {
    fseek($f,ftell($f)-1);
   };
- return RetBits($Byte,$LastCBit,$count);
+ return jpexs_retBits($Byte,$LastCBit,$count);
 };
 
 
-function freadbyte($f)
+function jpexs_freadbyte($f)
 {
  return ord(fread($f,1));
 };
 
-function freadword($f)
+function jpexs_freadword($f)
 {
- $b1=freadbyte($f);
- $b2=freadbyte($f);
+ $b1=jpexs_freadbyte($f);
+ $b2=jpexs_freadbyte($f);
  return $b2*256+$b1;
 };
 
 
-function freadlngint($f)
+function jpexs_freadlngint($f)
 {
-return freaddword($f);
+return jpexs_freaddword($f);
 };
 
-function freaddword($f)
+function jpexs_freaddword($f)
 {
- $b1=freadword($f);
- $b2=freadword($f);
+ $b1=jpexs_freadword($f);
+ $b2=jpexs_freadword($f);
  return $b2*65536+$b1;
 };
 
-function inttobyte($n)
+function jpexs_inttobyte($n)
 {
 return chr($n);
 };
 
-function inttodword($n)
+function jpexs_inttodword($n)
 {
 return chr($n & 255).chr(($n >> 8) & 255).chr(($n >> 16) & 255).chr(($n >> 24) & 255);
 };
 
-function inttoword($n)
+function jpexs_inttoword($n)
  {
  return chr($n & 255).chr(($n >> 8) & 255);
  };
