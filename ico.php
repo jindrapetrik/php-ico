@@ -3,9 +3,9 @@
  * @package com.jpexs.image.ico
  *
  * JPEXS ICO Image functions
- * @version 2.1
+ * @version 2.2
  * @author JPEXS
- * @copyright (c) JPEXS 2004-2009
+ * @copyright (c) JPEXS 2004-2012
  *
  * Webpage: http://www.jpexs.com
  * Email: jpexs@jpexs.com
@@ -13,21 +13,30 @@
  * If you like my script, you can donate... visit my webpages or email me for more info.
  *
  *        Version changes:
- *                v2.1 - redesigned sourcecode, phpdoc included, all internal functions and global variables have prefix "jpexs_"
- *                v2.0 - For icons with Alpha channel now you can set background color
- *                     - ImageCreateFromExeIco added
- *                     - Fixed ICO_MAX_SIZE and ICO_MAX_COLOR values
+ *          2012-02-18 v2.2 - License changed to GNU/GPL v3
+ *          2009-02-23 v2.1 - redesigned sourcecode, phpdoc included, all internal functions and global variables have prefix "jpexs_"
+ *                     v2.0 - For icons with Alpha channel now you can set background color
+ *                          - ImageCreateFromExeIco added
+ *                          - Fixed ICO_MAX_SIZE and ICO_MAX_COLOR values
  *
  * TODO list:
  *      - better error handling
+ *      - better internal function handling
  *      - class encapsulation
+ * 
  * License:
- *      - you can freely use it
- *      - you can freely distribute sourcecode
- *      - you can freely modify it as long as you leave my copyright/author info in source code
- *      - if you developing closesource application, you should add my name at least to "about" page of your web application
- *      - if you create an amazing modification, please contact me... I can publish link to your webpage if you're interested...
- *      - if you want to use my script in commercial application for earning money, you should make a donation to me first
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /** TrueColor images constant  */
