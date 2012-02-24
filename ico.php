@@ -3,7 +3,7 @@
  * @package com.jpexs.image.ico
  *
  * JPEXS ICO Image functions
- * @version 2.2
+ * @version 2.3
  * @author JPEXS
  * @copyright (c) JPEXS 2004-2012
  *
@@ -13,6 +13,7 @@
  * If you like my script, you can donate... visit my webpages or email me for more info.
  *
  *        Version changes:
+ *          2012-02-25 v2.3 - License changed to GNU/GPL v2 or v3
  *          2012-02-18 v2.2 - License changed to GNU/GPL v3
  *          2009-02-23 v2.1 - redesigned sourcecode, phpdoc included, all internal functions and global variables have prefix "jpexs_"
  *                     v2.0 - For icons with Alpha channel now you can set background color
@@ -27,7 +28,7 @@
  * License:
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
+ *  the Free Software Foundation, either version 2 or version 3 of the License, or
  *  (at your option) any later version.
  * 
  *  This program is distributed in the hope that it will be useful,
