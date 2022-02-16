@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+ - License change to GNU/LGPL v2.1
+
 ## [2.3] - 2012-02-25
  - License changed to GNU/GPL v2 or v3
 

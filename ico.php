@@ -12,32 +12,24 @@
  *
  * If you like my script, you can donate... visit my webpages or email me for more info.
  *
- *        Version changes:
- *          2012-02-25 v2.3 - License changed to GNU/GPL v2 or v3
- *          2012-02-18 v2.2 - License changed to GNU/GPL v3
- *          2009-02-23 v2.1 - redesigned sourcecode, phpdoc included, all internal functions and global variables have prefix "jpexs_"
- *                     v2.0 - For icons with Alpha channel now you can set background color
- *                          - ImageCreateFromExeIco added
- *                          - Fixed ICO_MAX_SIZE and ICO_MAX_COLOR values
- *
  * TODO list:
  *      - better error handling
  *      - better internal function handling
  *      - class encapsulation
  * 
  * License:
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 or version 3 of the License, or
- *  (at your option) any later version.
- * 
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- * 
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
  */
 
 /** TrueColor images constant  */
