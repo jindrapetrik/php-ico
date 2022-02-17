@@ -1,18 +1,26 @@
 <?php
 
+
+require_once __DIR__.'/Com/Jpexs/Image/IconReader.php';
+require_once __DIR__.'/Com/Jpexs/Image/ExeIconReader.php';
+require_once __DIR__.'/Com/Jpexs/Image/IconWriter.php';
+use Com\Jpexs\Image\IconReader;
+use Com\Jpexs\Image\IconWriter;
+use Com\Jpexs\Image\ExeIconReader;
+use Com\Jpexs\Image\IconReaderImage;
+
+$testIcoFile = "./test.ico";
+$testExeFile = "./test.exe";
+
+
 $action = "html";
 if (array_key_exists("action", $_GET)) {
     $action = $_GET["action"];
 }
 
-include './ico.php';
-use Com\Jpexs\Image\Icon;
-
-$testFile = "./test.ico";
 
 if ($action === "html") {
-        $iconLib = new Icon();
-        $icons = $iconLib->getIconsInfo($testFile);
+    echo '<body bgcolor="#8f8">';
         
         $bitNames = [
           1 => "1bit - black and white",
@@ -21,22 +29,52 @@ if ($action === "html") {
           24 => "24bit - True colors",
           32 => "32bit - True colors + alpha channel"
         ];
-        
+       
         echo '<h1>Icon generation</h1>';
         echo '<a href="index.php?action=generate_icon">Download icon</a>';
         
         echo '<h1>List of icons of test.ico:</h1>';
-        foreach($icons as $icon) {
-            echo $icon["width"] . " x " . $icon["height"];
-            echo ", " . $bitNames[$icon["bit_count"]] . "<br>";
-            echo '<img src="index.php?action=icon_to_png&width=' . $icon["width"] . '&bit_count=' . $icon["bit_count"] . '" /> <br />';
+        
+        $iconReader = IconReader::createFromIcoFile($testIcoFile);       
+        
+        foreach($iconReader as $imageId => $image) {
+            /**
+             * @var IconReaderImage $icon
+             */
+            echo $image->getWidth() . " x " . $image->getHeight();
+            echo ", " . $bitNames[$image->getColorsBitCount()] . "<br>";
+            echo '<img src="index.php?action=icon_to_png&imageId=' . $imageId. '" /> <br />';
         }    
+        
+        echo '<h1>List of icons of test.exe</h1>';
+        
+        $exeReader = ExeIconReader::createFromExeFile($testExeFile);
+        
+        echo $exeReader->getIconCount() . " icon groups<br>";
+        foreach ($exeReader as $iconId => $icon) {
+            echo "<h2>icon group $iconId</h2>";
+            foreach($icon as $imageId => $image) {
+                /**
+                 * @var IconReaderImage $icon
+                 */
+                echo $image->getWidth() . " x " . $image->getHeight();
+                echo ", " . $bitNames[$image->getColorsBitCount()] . "<br>";
+                echo '<img src="index.php?action=exe_icon_to_png&iconId=' . $iconId . "&imageId=" . $imageId. '" /> <br />';
+            }   
+        }
+        
+        echo '</body>';
 }
 if ($action === "icon_to_png")
 {
     header("Content-type: image/png");
-    $image = imagecreatefromico($testFile, $_GET["bit_count"] ?? Icon::COLORS_TRUE_COLOR, $_GET["width"] ?? 32);
-    imagepng($image);
+    $iconReader = IconReader::createFromIcoFile($testIcoFile);
+    /**
+     * @var IconReaderImage $icon
+     */
+    $image = $iconReader->getImage($_GET["imageId"] ?? 0);
+    $imageResource = $image->getImage();
+    imagepng($imageResource);
 }
 if ($action === "generate_icon")
 {
@@ -55,5 +93,18 @@ if ($action === "generate_icon")
         $images[] = $image;
     }
     
-    imageico($images);    
+    $writer = new IconWriter();
+    $writer->createToPrint($images);
+}
+
+if ($action === "exe_icon_to_png")
+{
+    header("Content-type: image/png");
+    $exeReader = ExeIconReader::createFromExeFile($testExeFile);
+    /**
+     * @var IconReaderImage $imageReader
+     */
+    $imageReader = $exeReader->getIcon($_GET["iconId"] ?? 0)->getImage($_GET["imageId"] ?? 0);
+    $imageResource = $imageReader->getImage();
+    imagepng($imageResource);
 }

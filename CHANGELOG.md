@@ -4,8 +4,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
  - License change to GNU/LGPL v2.1
  - Support for PNG encoded icons (256x256 sizes usually)
- - Class encapsulation
+ - Class encapsulation, total redesign
  - Code formatting
+ - Fixed problems with alpha channel on 32bit images
+ - Added sample data and script
 
 ## [2.3] - 2012-02-25
  - License changed to GNU/GPL v2 or v3
