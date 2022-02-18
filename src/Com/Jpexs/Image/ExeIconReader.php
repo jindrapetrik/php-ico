@@ -223,7 +223,7 @@ class ExeIconReader implements \Iterator {
     
     public function saveIcon(string $iconIndex, string $filename): bool {
         if (!array_key_exists($iconIndex, $this->iconData)) {
-            return null;
+            return false;
         }
         file_put_contents($filename, $this->iconData[$iconIndex]);
         return true;

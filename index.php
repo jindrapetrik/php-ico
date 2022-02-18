@@ -69,9 +69,9 @@ if ($action === "html") {
 if ($action === "icon_to_png") {
     header("Content-type: image/png");
     $iconReader = IconReader::createFromIcoFile($testIcoFile);
-    $imageReader = $iconReader->getImage($_GET["imageId"]);
-    $imageResource = $imageReader->getImage();
-    imagepng($imageResource);
+    $iconImage = $iconReader->getIconImage($_GET["imageId"]);
+    $image = $iconImage->getImage();
+    imagepng($image);
     exit;
 }
 
@@ -99,7 +99,7 @@ if ($action === "generate_icon") {
 if ($action === "exe_icon_to_png") {
     header("Content-type: image/png");
     $exeReader = ExeIconReader::createFromExeFile($testExeFile);
-    $iconImage = $exeReader->getIcon($_GET["iconId"])->getImage($_GET["imageId"]);
+    $iconImage = $exeReader->getIcon($_GET["iconId"])->getIconImage($_GET["imageId"]);
     $image = $iconImage->getImage();
     imagepng($image);
     exit;

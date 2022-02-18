@@ -36,7 +36,7 @@ class IconReader implements \Iterator {
     }
     
     public function current() {
-        return $this->getImage($this->iterablePosition);
+        return $this->getIconImage($this->iterablePosition);
     }
     
     public function key() {
@@ -60,11 +60,11 @@ class IconReader implements \Iterator {
         return new IconReader($stream);
     }  
     
-    public function getImage(int $imageIndex): IconReaderImage {
+    public function getIconImage(int $imageIndex): IconReaderImage {
         return $this->images[$imageIndex];
     }
     
-    public function getImageCount(): int {
+    public function getIconImageCount(): int {
         return count($this->images);
     }
        
