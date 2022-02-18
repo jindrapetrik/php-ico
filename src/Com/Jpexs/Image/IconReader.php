@@ -5,29 +5,46 @@ namespace Com\Jpexs\Image;
 use Com\Jpexs\Stream\StreamReader;
 
 /**
- * @implements Iterator<IconReaderImage>
+ * Class for reading icons (.ico) and cursors (.cur)
+ * 
+ * @implements Iterator<IconImage>
  */
 class IconReader implements \Iterator {
     
+    public const TYPE_ICON = 1;
+    
+    public const TYPE_CURSOR = 2;
+    
     /**
      * 
-     * @var IconReaderImage[]
+     * @var IconImage[]
      */
-    private $images;
+    private $iconImages;
         
     private $iterablePosition = 0;
     
+    /**
+     * @see IconReader::TYPE_*
+     * @var int
+     */
+    private $type;
+    
     private function __construct($stream) {
         $reader = new StreamReader($stream);
-        $reader->skip(4);
+        $reader->skip(2); //reserved
+        $this->type = $reader->readWord();
         $count = $reader->readWord();                
         $iconImages = [];
         for ($i = 0; $i < $count; $i++) {
             $reader->seek(0);
-            $iconImage = IconReaderImage::createFromStream($stream, $i);
+            if ($this->type === self::TYPE_CURSOR) {
+                $iconImage = CursorImage::createFromStream($stream, $i);               
+            } else {
+                $iconImage = IconImage::createFromStream($stream, $i);
+            }
             $iconImages[] = $iconImage;
         }       
-        $this->images = $iconImages;
+        $this->iconImages = $iconImages;
         fclose($stream);
     }
     
@@ -48,24 +65,44 @@ class IconReader implements \Iterator {
     }
     
     public function valid(): bool {
-        return isset($this->images[$this->iterablePosition]);
+        return isset($this->iconImages[$this->iterablePosition]);
     }
 
     public static function createFromIcoFile(string $filename): self {        
         $stream = fopen($filename, "rb");
         return new IconReader($stream);
-    }  
+    } 
+    
+    public static function createFromCurFile(string $filename): self {        
+        $stream = fopen($filename, "rb");
+        return new IconReader($stream);
+    } 
     
     public static function createFromStream($stream): self {        
         return new IconReader($stream);
     }  
     
-    public function getIconImage(int $imageIndex): IconReaderImage {
-        return $this->images[$imageIndex];
+    public function getIconImage(int $imageIndex): IconImage {
+        return $this->iconImages[$imageIndex];
     }
     
     public function getIconImageCount(): int {
-        return count($this->images);
+        return count($this->iconImages);
     }
-       
+     
+    /**
+     * @see IconReader::TYPE_*
+     * @return int
+     */
+    public function getType(): int {
+        return $this->type;
+    }
+    
+    public function getCursorImage(): ?CursorImage {
+        if ($this->type === self::TYPE_CURSOR) {
+            return $this->iconImages[0];
+        }
+        return null;
+    }
+    
 }

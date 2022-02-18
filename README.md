@@ -1,5 +1,6 @@
 # php-ico
-Icon manipulation library for PHP.
+Icon (.ICO) and Cursor (.CUR) manipulation library for PHP.
+With EXE icons reading support.
 
 ## Usage
 Full example is available in the file [index.php](index.php).
@@ -101,6 +102,56 @@ use Com\Jpexs\Image\ExeIconReader;
 $exeReader = ExeIconReader::createFromExeFile("samples/test.exe");
 $iconId = "CAT";
 echo $exeReader->saveIcon($iconId, "./out.ico");
+```
+
+### Get cursor info
+```php
+include_once '<lib_path>/includes/autoload.php';
+
+use Com\Jpexs\Image\IconReader;
+
+$iconReader = IconReader::createFromCurFile("samples/test.cur");
+$cursorImage = $iconReader->getCursorImage();
+echo $cursorImage->getWidth() . " x " . $cursorImage->getHeight();
+echo ", color bit count: " . $cursorImage->getColorsBitCount() . "<br>";
+echo "hotspot x: " . $cursorImage->getHotSpotX().", hotspot y:" . $cursorImage->getHotSpotY() . "<br>";
+```
+
+### Display cursor image
+```php
+include_once '<lib_path>/includes/autoload.php';
+
+use Com\Jpexs\Image\IconReader;
+
+header("Content-type: image/png");
+$iconReader = IconReader::createFromCurFile($testCurFile);
+$cursorImage = $iconReader->getCursorImage();
+$image = $cursorImage->getImage();
+imagepng($image);
+```
+
+### Generate cursor
+```php
+include_once '<lib_path>/includes/autoload.php';
+
+use Com\Jpexs\Image\IconWriter;
+
+header("Content-type: image/vnd.microsoft.icon");
+$writer = new IconWriter();
+$image = imagecreate(32, 32);
+$background = imagecolorallocate($image, 255, 0, 255);
+imagefill($image, 0, 0, $background);
+$blue = imagecolorallocate($image, 0, 0, 255);
+$yellow = imagecolorallocate($image, 255, 255, 0);
+$polygon = [
+    5, 5,
+    20, 5,
+    5, 20,
+];
+imagefilledpolygon($image, $polygon, count($polygon)/2, $blue);
+imagepolygon($image, $polygon, count($polygon)/2, $yellow);
+imagecolortransparent($image, $background);    
+$writer->createCursorToPrint($image, 5, 5); //hotspot 5, 5
 ```
 
 ## License

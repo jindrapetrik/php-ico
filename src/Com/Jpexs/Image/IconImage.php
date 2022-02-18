@@ -4,7 +4,7 @@ namespace Com\Jpexs\Image;
 
 use Com\Jpexs\Stream\StreamReader;
 
-class IconReaderImage {
+class IconImage {
 
     /**
      * 
@@ -22,7 +22,7 @@ class IconReaderImage {
      * 
      * @var int|null
      */
-    private $colorsBitCount;
+    private $colorsBitCount = null;                
 
     /**
      * 
@@ -46,7 +46,7 @@ class IconReaderImage {
      * 
      * @var array
      */
-    private $iconData;
+    private $iconData;       
 
     /**
      * 
@@ -54,51 +54,63 @@ class IconReaderImage {
      * @param int $iconId
      */
     private function __construct($stream, int $iconId) {        
+        $this->init($stream, $iconId);
+    }
+    
+    protected function init($stream, int $iconId) {
         $this->stream = $stream;                
         $this->iconId = $iconId;
         $this->streamPos = ftell($stream);
-        $this->readBasicInfo();
         $this->iconData = $this->readImage();
     }
 
-    private function readBasicInfo(): void {
-        $reader = new StreamReader($this->stream);
-        $reader->seek($this->streamPos + 6 + $this->iconId * 16);
-        $width = $reader->readByte();
-        $height = $reader->readByte();
-
-        if ($width === 0) {
-            $width = 256;
-        }
-        if ($height === 0) {
-            $height = 256;
-        }
-        $this->width = $width;
-        $this->height = $height;
-        $reader->skip(4);
-        $this->colorsBitCount = $reader->readWord();       
-        $reader->seek($this->streamPos);             
-    }
-
     public static function createFromStream($stream, int $iconId) {
-        return new IconReaderImage($stream, $iconId);
+        return new IconImage($stream, $iconId);
     }
 
     private function readImage(): array {        
         $reader = new StreamReader($this->stream);
-        $reader->seek($this->streamPos + 6 + $this->iconId * 16 + 8);
+        $reader->seek($this->streamPos + 2);
+        $type = $reader->readWord();
+        $reader->seek($this->streamPos + 6 + $this->iconId * 16);
+        $widthByte = $reader->readByte();
+        $heightByte= $reader->readByte();
+
+        if ($widthByte === 0) {
+            $width = 256;
+        }else{
+            $width = $widthByte;
+        }
+        if ($heightByte === 0) {
+            $height = 256;
+        } else {
+            $height = $heightByte;
+        }
+        $this->width = $width;
+        $this->height = $height;
+        $reader->skip(6); //number of colors, reserved, color planes (hotspotx), bit count (hotspot y)
+        
         $dataLength = $reader->readDWord();
         $offset = $reader->readDWord();
         $reader->seek($offset);      
-        
-        $width = $this->width;
-        $height = $this->height;
 
         $icon["info"] = [];
         $icon["info"]["header_size"] = $reader->readLongInt();
         if ($icon["info"]["header_size"] === 0x474E5089) {
             //it's a PNG file
-            $icon["png_data"] = chr(0x89) . "PNG" . $reader->read($dataLength - 4);
+            $pngData = chr(0x89) . "PNG" . $reader->read($dataLength - 4);
+            $pngStream = fopen("php://memory", "r+");
+            fwrite($pngStream, $pngData);
+            rewind($pngStream); 
+            $reader = new StreamReader($pngStream);
+            $reader->skip(8);
+            $chunkLength = $reader->readDWord();
+            $chunkName = $reader->read(4);
+            if ($chunkName === "IHDR") {
+                $reader->skip(8); //skip width, height
+                $this->colorsBitCount = $reader->readByte();
+            }
+            $icon["png_data"] = $pngData;
             return $icon;
         } else {
             $icon["info"]["image_width"] = $reader->readLongInt();
@@ -111,13 +123,13 @@ class IconReaderImage {
             $icon["info"]["vert_resolution"] = $reader->readLongInt();
             $icon["info"]["num_color_used"] = $reader->readLongInt();
             $icon["info"]["num_significant_colors"] = $reader->readLongInt();
-        }
+            
+            $this->colorsBitCount = $icon["info"]["bits_per_pixel"];
+        }              
 
-        $biBitCount = $this->colorsBitCount;
+        if ($this->colorsBitCount <= 8) {
 
-        if ($biBitCount <= 8) {
-
-            $numColors = pow(2, $biBitCount);
+            $numColors = pow(2, $this->colorsBitCount);
 
             for ($b = 0; $b < $numColors; $b++) {
                 $icon["palette"][$b]["b"] = $reader->readByte();
@@ -126,12 +138,12 @@ class IconReaderImage {
                 $reader->readByte();
             }
 
-            $remainder = (4 - ceil(($width / (8 / $biBitCount))) % 4) % 4;
+            $remainder = (4 - ceil(($width / (8 / $this->colorsBitCount))) % 4) % 4;
 
             for ($y = $height - 1; $y >= 0; $y--) {
                 $reader->setCurrentBit(0);
                 for ($x = 0; $x < $width; $x++) {
-                    $c = $reader->readBits($biBitCount);
+                    $c = $reader->readBits($this->colorsBitCount);
                     $icon["data"][$x][$y] = $c;
                 }
                 if ($reader->getCurrentBit() != 0) {
@@ -141,7 +153,7 @@ class IconReaderImage {
                     $reader->readByte();
                 }
             }
-        } elseif ($biBitCount == 24) {
+        } elseif ($this->colorsBitCount == 24) {
             $remainder = $width % 4;
 
             for ($y = $height - 1; $y >= 0; $y--) {
@@ -157,7 +169,7 @@ class IconReaderImage {
                     $reader->readByte();
                 }
             }
-        } elseif ($biBitCount == 32) {
+        } elseif ($this->colorsBitCount == 32) {
             $remainder = $width % 4;
 
             for ($y = $height - 1; $y >= 0; $y--) {
@@ -205,7 +217,7 @@ class IconReaderImage {
             imagesavealpha($image, true);
             return $image;
         }
-                
+                        
         $isTransparent = false;
         for ($y = 0; $y < $this->height; $y++) {
             for ($x = 0; $x < $this->width; $x++) {
@@ -341,6 +353,5 @@ class IconReaderImage {
 
     public function getColorsBitCount(): int {
         return $this->colorsBitCount;
-    }
-
+    }        
 }

@@ -2,7 +2,7 @@
 
 namespace Com\Jpexs\Stream;
 
-class StreamWriter { 
+class StreamWriter {
 
     public function inttobyte(int $n): string {
         return chr($n);

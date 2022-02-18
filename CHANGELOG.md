@@ -1,8 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [4.0] - 2022-02-18
+ - Added cursor (.CUR) support
  - Stream optimize
+ - Fixed transparent color when writing
+ - Fixed writing icons with bpp < 8
 
 ## [3.0] - 2022-02-18
  - License change to GNU/LGPL v2.1

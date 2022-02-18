@@ -7,6 +7,7 @@ use Com\Jpexs\Image\IconWriter;
 use Com\Jpexs\Image\ExeIconReader;
 
 $testIcoFile = "./samples/test.ico";
+$testCurFile = "./samples/test.cur";
 $testExeFile = "./samples/test.exe";
 
 $action = "html";
@@ -61,6 +62,18 @@ if ($action === "html") {
         }
     }
 
+    echo '<h2>4) Cursor display</h2>';
+    
+    $iconReader = IconReader::createFromCurFile($testCurFile);
+    $cursorImage = $iconReader->getCursorImage();
+    echo $cursorImage->getWidth() . " x " . $cursorImage->getHeight();
+    echo ", " . $bitNames[$cursorImage->getColorsBitCount()] . "<br>";
+    echo "hotspot x: " . $cursorImage->getHotSpotX().", hotspot y:" . $cursorImage->getHotSpotY() . "<br>";
+    echo '<img src="index.php?action=cursor_to_png" /> <br />';
+    
+    echo '<h2>5) Generate cursor</h2>';
+    echo '<div style="width:200px; height:200px; margin:auto; background-color: #f00; cursor: url(\'index.php?action=generate_cursor\'), auto;">sample div - hover to show cursor</div>';
+    
     echo '</body>
         </html>';
     exit;
@@ -113,5 +126,34 @@ if ($action === "exe_icon_export") {
 
     $exeReader = ExeIconReader::createFromExeFile($testExeFile);
     echo $exeReader->getIconData($iconId);
+    exit;
+}
+
+if ($action === "cursor_to_png") {    
+    header("Content-type: image/png");
+    $iconReader = IconReader::createFromCurFile($testCurFile);
+    $cursorImage = $iconReader->getCursorImage();
+    $image = $cursorImage->getImage();
+    imagepng($image);
+    exit;
+}
+
+if ($action === "generate_cursor") {
+    header("Content-type: image/vnd.microsoft.icon");
+    $writer = new IconWriter();
+    $image = imagecreate(32, 32);
+    $background = imagecolorallocate($image, 255, 0, 255);
+    imagefill($image, 0, 0, $background);
+    $blue = imagecolorallocate($image, 0, 0, 255);
+    $yellow = imagecolorallocate($image, 255, 255, 0);
+    $polygon = [
+        5, 5,
+        20, 5,
+        5, 20,
+    ];
+    imagefilledpolygon($image, $polygon, count($polygon)/2, $blue);
+    imagepolygon($image, $polygon, count($polygon)/2, $yellow);
+    imagecolortransparent($image, $background);    
+    $writer->createCursorToPrint($image, 5, 5);
     exit;
 }

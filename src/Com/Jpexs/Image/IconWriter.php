@@ -5,6 +5,10 @@ namespace Com\Jpexs\Image;
 use Com\Jpexs\Stream\StreamWriter;
 
 class IconWriter {
+    
+    public const TYPE_ICON = 1;
+    
+    public const TYPE_CURSOR = 2;
 
     /**
      * Creates ico file from image resource(s)
@@ -12,6 +16,10 @@ class IconWriter {
      * @return string|false String data of icon, False on failure
      */
     public function createAsString($images) {
+        return $this->createAsStringInternal($images);
+    }
+    
+    private function createAsStringInternal($images, $hotSpotX = null, $hotSpotY = null) {
 
         $writer = new StreamWriter();
         
@@ -22,8 +30,8 @@ class IconWriter {
 
         $ret = "";
 
-        $ret .= $writer->inttoword(0); //PASSWORD
-        $ret .= $writer->inttoword(1); //SOURCE
+        $ret .= $writer->inttoword(0); //reserved
+        $ret .= $writer->inttoword($hotSpotX === null ? self::TYPE_ICON : self::TYPE_CURSOR); //type
         $ret .= $writer->inttoword($imageCount); //ICONCOUNT
 
         $fullSize = 0;
@@ -37,10 +45,6 @@ class IconWriter {
 
             $transparent = imagecolortransparent($img);
             $isTransparent = $transparent != -1;
-
-            if ($isTransparent) {
-                $colorCount--;
-            }
 
             if ($colorCount == 0) {
                 $colorCount = 0;
@@ -70,17 +74,22 @@ class IconWriter {
                 $planes = 1;
             }
 
-            $ret .= $writer->inttoword($planes);
-            if ($bitCount >= 8) {
-                $WBitCount = $bitCount;
+            if ($hotSpotX !== null) {
+                $ret .= $writer->inttoword($hotSpotX);
+                $ret .= $writer->inttoword($hotSpotY);
+            } else {           
+                $ret .= $writer->inttoword($planes);
+                if ($bitCount >= 8) {
+                    $WBitCount = $bitCount;
+                }
+                if ($bitCount == 4) {
+                    $WBitCount = 0;
+                }
+                if ($bitCount == 1) {
+                    $WBitCount = 0;
+                }
+                $ret .= $writer->inttoword($WBitCount); //BITS
             }
-            if ($bitCount == 4) {
-                $WBitCount = 0;
-            }
-            if ($bitCount == 1) {
-                $WBitCount = 0;
-            }
-            $ret .= $writer->inttoword($WBitCount); //BITS
 
             $remainder = (4 - ($width / (8 / $bitCount)) % 4) % 4;
             $remainderMask = (4 - ($width / 8) % 4) % 4;
@@ -104,9 +113,6 @@ class IconWriter {
             $transparent = imagecolortransparent($img);
             $isTransparent = $transparent != -1;
 
-            if ($isTransparent) {
-                $colorCount--;
-            }
             if ($colorCount == 0) {
                 $colorCount = 0;
                 $bitCount = 24;
@@ -151,10 +157,7 @@ class IconWriter {
 
             if ($bitCount < 24) {
                 $colorTotal = imagecolorstotal($img);
-                if ($isTransparent) {
-                    $colorTotal--;
-                }
-
+                
                 for ($p = 0; $p < $colorTotal; $p++) {
                     $color = imagecolorsforindex($img, $p);
                     $ret .= $writer->inttobyte($color["blue"]);
@@ -272,6 +275,15 @@ class IconWriter {
         return true;
     }
     
+    private function decbinx($d, $n) {
+        $bin = decbin($d);
+        $sbin = strlen($bin);
+        for ($j = 0; $j < $n - $sbin; $j++) {
+            $bin = "0$bin";
+        }
+        return $bin;
+    }
+    
     /**
      * Creates icon and prints it to standard output. 
      * Note: use proper header("Content-type: image/x-icon")
@@ -280,6 +292,50 @@ class IconWriter {
     public function createToPrint($images): void
     {
         echo $this->createAsString($images);
+    }
+    
+    /**
+     * 
+     * @param resource|GdImage $image
+     * @return string
+     */
+    public function createCursorAsString($image, int $hotSpotX, int $hotSpotY): string {
+        return $this->createAsStringInternal($image, $hotSpotX, $hotSpotY);
+    }
+    
+    /**
+     * 
+     * @param resource|GdImage $image
+     * @param int $hotSpotX Cursor hot spot X
+     * @param int $hotSpotY Cursor hot spot Y
+     */
+    public function createCursorToPrint($image, int $hotSpotX, int $hotSpotY) {
+        echo $this->createCursorAsString($image, $hotSpotX, $hotSpotY);
+    }
+    
+    /**
+     * Creates cursor to target file
+     * @param resource|GdImage $image Target Image resource     
+     * @param string $filename Output file
+     * @param int $hotSpotX Cursor hot spot X
+     * @param int $hotSpotY Cursor hot spot Y
+     * @return bool True on success, False on failure
+     */
+    public function createCursorToFile($image, string $filename, int $hotSpotX, int $hotSpotY): bool
+    {
+        $f = @fopen($filename, "w");
+        if ($f === false) {
+            trigger_error("Cannot write cursor to file \"$filename\"");
+            return false;
+        }
+        $data = $this->createCursorAsString($image, $hotSpotX, $hotSpotY);
+        if ($data === false) {
+            return false;
+        }
+        fwrite($f, $data);
+        fclose($f);
+        
+        return true;
     }
 
 }
