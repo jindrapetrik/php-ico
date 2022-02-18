@@ -2,6 +2,8 @@
 Icon manipulation library for PHP.
 
 ## Usage
+Full example is available in the file [index.php](index.php).
+
 ### List all images of an icon
 ```php
 include_once '<lib_path>/includes/autoload.php';
