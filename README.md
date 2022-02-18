@@ -104,7 +104,7 @@ echo $exeReader->saveIcon($iconId, "./out.ico");
 ```
 
 ## License
-The library is licensed under GNU/LGPL v2.1, see [LICENSE.md](LICENSE.md)
+The library is licensed under GNU/LGPL v2.1, see [LICENSE](LICENSE)
 for details.
 
 ## Author
