@@ -124,7 +124,7 @@ include_once '<lib_path>/includes/autoload.php';
 use Com\Jpexs\Image\IconReader;
 
 header("Content-type: image/png");
-$iconReader = IconReader::createFromCurFile($testCurFile);
+$iconReader = IconReader::createFromCurFile("samples/test.cur");
 $cursorImage = $iconReader->getCursorImage();
 $image = $cursorImage->getImage();
 imagepng($image);
