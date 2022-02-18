@@ -1,9 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [3.0] - 2022-02-18
  - License change to GNU/LGPL v2.1
- - Support for PNG encoded icons (256x256 sizes usually)
+ - Support for reading PNG encoded icons (256x256 sizes usually)
  - Class encapsulation, total redesign
  - Code formatting
  - Fixed problems with alpha channel on 32bit images
