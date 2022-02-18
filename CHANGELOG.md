@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+ - Stream optimize
+
 ## [3.0] - 2022-02-18
  - License change to GNU/LGPL v2.1
  - Support for reading PNG encoded icons (256x256 sizes usually)

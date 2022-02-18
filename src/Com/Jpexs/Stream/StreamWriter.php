@@ -9,10 +9,10 @@ class StreamWriter {
     }
 
     public function inttodword(int $n): string {
-        return chr($n & 255) . chr(($n >> 8) & 255) . chr(($n >> 16) & 255) . chr(($n >> 24) & 255);
+        return pack("V", $n);
     }
 
     public function inttoword(int $n): string {
-        return chr($n & 255) . chr(($n >> 8) & 255);
+        return pack("v", $n);
     }
 }

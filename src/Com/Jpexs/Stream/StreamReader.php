@@ -90,9 +90,8 @@ class StreamReader {
     }
 
     public function readWord(): int {
-        $b1 = $this->readByte();
-        $b2 = $this->readByte();
-        return $b2 * 256 + $b1;
+        $ret = unpack("vvalue", $this->read(2));
+        return $ret["value"];
     }
 
     public function readLongInt(): int {
@@ -100,9 +99,8 @@ class StreamReader {
     }
 
     public function readDWord(): int {
-        $b1 = $this->readWord();
-        $b2 = $this->readWord();
-        return $b2 * 65536 + $b1;
+        $ret = unpack("Vvalue", $this->read(4));
+        return $ret["value"];
     }
 
     /**
