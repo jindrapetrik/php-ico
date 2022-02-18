@@ -2,9 +2,6 @@
 
 namespace Com\Jpexs\Image;
 
-require_once __DIR__ . '/IconReaderImage.php';
-require_once __DIR__ . '/../Stream/StreamWriter.php';
-
 use Com\Jpexs\Stream\StreamWriter;
 
 class IconWriter {

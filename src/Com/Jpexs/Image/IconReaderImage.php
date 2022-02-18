@@ -2,8 +2,6 @@
 
 namespace Com\Jpexs\Image;
 
-require_once __DIR__ . '/../Stream/StreamReader.php';
-
 use Com\Jpexs\Stream\StreamReader;
 
 class IconReaderImage {
