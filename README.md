@@ -4,7 +4,7 @@ With EXE icons reading support.
 
 ## Bundled classes
 
-Namespace: Com\Jpexs\Image
+Namespace: `Com\Jpexs\Image`
 
 - `IconReader` - reads icons (.ICO) and cursors (.CUR), displays them
 - `IconWriter` - creates icons (.ICO) and cursors (.CUR) from GD images
