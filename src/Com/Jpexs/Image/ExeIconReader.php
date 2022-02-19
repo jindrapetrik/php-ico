@@ -6,6 +6,7 @@ use Com\Jpexs\Stream\StreamReader;
 use \Com\Jpexs\Stream\StreamWriter;
 
 /**
+ * Class for reading icons from EXE files
  * @implements Iterator<string, IconReader>
  */
 class ExeIconReader implements \Iterator {

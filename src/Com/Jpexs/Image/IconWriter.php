@@ -4,6 +4,9 @@ namespace Com\Jpexs\Image;
 
 use Com\Jpexs\Stream\StreamWriter;
 
+/**
+ * Class for writing icons (.ico) and cursors (.cur)
+ */
 class IconWriter {
     
     public const TYPE_ICON = 1;

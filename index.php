@@ -5,10 +5,13 @@ include_once './includes/autoload.php';
 use Com\Jpexs\Image\IconReader;
 use Com\Jpexs\Image\IconWriter;
 use Com\Jpexs\Image\ExeIconReader;
+use Com\Jpexs\Image\AniReader;
+use Com\Jpexs\Image\AniWriter;
 
 $testIcoFile = "./samples/test.ico";
 $testCurFile = "./samples/test.cur";
 $testExeFile = "./samples/test.exe";
+$testAniFile = "./samples/test.ani";
 
 $action = "html";
 if (array_key_exists("action", $_GET)) {
@@ -72,7 +75,27 @@ if ($action === "html") {
     echo '<img src="index.php?action=cursor_to_png" /> <br />';
     
     echo '<h2>5) Generate cursor</h2>';
-    echo '<div style="width:200px; height:200px; margin:auto; background-color: #f00; cursor: url(\'index.php?action=generate_cursor\'), auto;">sample div - hover to show cursor</div>';
+    echo '<div style="width:200px; height:200px; background-color: #f00; cursor: url(\'index.php?action=generate_cursor\'), auto;">sample div - hover to show cursor</div>';
+    
+    echo '<h2>6) Details of animation in ' . $testAniFile . ':</h2>';
+
+    $aniReader = AniReader::createFromAniFile($testAniFile);
+    echo $aniReader->getWidth() . " x " . $aniReader->getHeight();
+    echo ", " . $bitNames[$aniReader->getColorsBitCount()] . "<br>";
+    echo "name: " . $aniReader->getName() . "<br>";   
+    echo "artist: " . $aniReader->getArtist() . "<br>";
+      
+    foreach ($aniReader as $imageId => $iconImage) {
+        echo '<img src="index.php?action=ani_to_png&imageId=' . $imageId . '" /> <br />';
+    }
+    
+    echo '<h2>7) Generate ANI cursor</h2>';
+    echo '<div style="width:200px; height:200px; background-color: #f00; cursor: url(\'index.php?action=generate_ani\'), auto;">'
+            . 'sample div - hover to show ANI cursor, however, as of 2022, no major browser supports ANI files :-('
+            . '</div><br>';
+    echo '<a href="index.php?action=generate_ani">download ANI animation</a>';
+    
+
     
     echo '</body>
         </html>';
@@ -168,4 +191,51 @@ if ($action === "generate_cursor") {
     imagecolortransparent($image, $background);    
     $writer->createCursorToPrint($image, 5, 5);
     exit;
+}
+
+if ($action === "ani_to_png") {   
+    header("Content-type: image/png");
+    $aniReader = AniReader::createFromAniFile($testAniFile);
+    $iconImage = $aniReader->getIconImage($_GET["imageId"]);
+    $image = $iconImage->getImage();        
+    imagepng($image);
+}
+
+if ($action === "generate_ani") {
+    
+    header("Content-type: application/x-navi-animation");
+    header('Content-Disposition: attachment; filename="generated.ani"');
+    $aniWriter = new AniWriter();
+    $aniWriter->setArtist("Jindra Petrik");
+    $aniWriter->setName("My Generated animated cursor");
+    $aniWriter->setDefaultFrameRate(5);
+    
+    $steps = 10;
+    
+    $startR = 0; $startG = 0; $startB = 255;
+    $endR = 0; $endG = 255; $endB = 0;
+    
+    for ($i = 0; $i < $steps; $i++) {
+        $image = imagecreate(32, 32);
+        $background = imagecolorallocate($image, 255, 0, 255);
+        imagefill($image, 0, 0, $background);
+        
+        $fillColor = imagecolorallocate($image, 
+                round($startR + ($endR - $startR) * $i / $steps),
+                round($startG + ($endG - $startG) * $i / $steps),
+                round($startB + ($endB - $startB) * $i / $steps),
+                );
+
+        $black = imagecolorallocate($image, 0, 0, 0);
+        $polygon = [
+            5, 5,
+            20, 5,
+            5, 20,
+        ];
+        imagefilledpolygon($image, $polygon, count($polygon)/2, $fillColor);
+        imagepolygon($image, $polygon, count($polygon)/2, $black);
+        imagecolortransparent($image, $background);  
+        $aniWriter->addImage($image, 5, 5);        
+    }          
+    $aniWriter->createToPrint();
 }

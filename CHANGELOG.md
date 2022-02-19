@@ -1,10 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [5.0] - 2022-02-19
+ - Added animated cursor (.ANI) support
  - Storing 256x256 32bit icons as PNG compressed
  - Error on writing larger images than 256
  - Enhanced sample for generating icon
+ - Separated file with samples
 
 ## [4.0] - 2022-02-18
  - Added cursor (.CUR) support

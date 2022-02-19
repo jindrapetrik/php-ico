@@ -4,6 +4,9 @@ namespace Com\Jpexs\Image;
 
 use Com\Jpexs\Stream\StreamReader;
 
+/**
+ * Single image from an icon
+ */
 class IconImage {
 
     /**
@@ -70,8 +73,6 @@ class IconImage {
 
     private function readImage(): array {        
         $reader = new StreamReader($this->stream);
-        $reader->seek($this->streamPos + 2);
-        $type = $reader->readWord();
         $reader->seek($this->streamPos + 6 + $this->iconId * 16);
         $widthByte = $reader->readByte();
         $heightByte= $reader->readByte();
@@ -337,10 +338,6 @@ class IconImage {
      */
     public function getStream() {
         return $this->stream;
-    }
-
-    public function getStreamOffset(): int {
-        return $this->streamOffset;
     }
 
     public function getWidth(): int {
