@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+ - Storing 256x256 icons as PNG compressed
+ - Error on writing larger images than 256
+
 ## [4.0] - 2022-02-18
  - Added cursor (.CUR) support
  - Stream optimize

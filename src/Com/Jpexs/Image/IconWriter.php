@@ -9,17 +9,19 @@ class IconWriter {
     public const TYPE_ICON = 1;
     
     public const TYPE_CURSOR = 2;
+    
+    private const BI_RGB = 0;
 
     /**
      * Creates ico file from image resource(s)
      * @param resource|resource[]|GdImage|GdImage[] $images Target Image resource (Can be array of image resources/GdImages)
-     * @return string|false String data of icon, False on failure
+     * @return string|null String data of icon, null on failure
      */
-    public function createAsString($images) {
+    public function createAsString($images): ?string {
         return $this->createAsStringInternal($images);
     }
     
-    private function createAsStringInternal($images, $hotSpotX = null, $hotSpotY = null) {
+    private function createAsStringInternal($images, $hotSpotX = null, $hotSpotY = null): ?string {
 
         $writer = new StreamWriter();
         
@@ -30,147 +32,114 @@ class IconWriter {
 
         $ret = "";
 
-        $ret .= $writer->inttoword(0); //reserved
-        $ret .= $writer->inttoword($hotSpotX === null ? self::TYPE_ICON : self::TYPE_CURSOR); //type
-        $ret .= $writer->inttoword($imageCount); //ICONCOUNT
+        //HEADER
+        $ret .= $writer->inttoword(0); //idReserved
+        $ret .= $writer->inttoword($hotSpotX === null ? self::TYPE_ICON : self::TYPE_CURSOR); //idType
+        $ret .= $writer->inttoword($imageCount); //idCount       
 
-        $fullSize = 0;
-        for ($q = 0; $q < $imageCount; $q++) {
-            $img = $images[$q];
-
+        $imageData = "";
+        $imageDataSizes = [];
+        $bitCounts = [];
+        $paletteColorCounts = [];
+        $widths = [];
+        $heights = [];
+        for ($i = 0; $i < $imageCount; $i++) {
+            $img = $images[$i];
             $width = imagesx($img);
             $height = imagesy($img);
-
-            $colorCount = imagecolorstotal($img);
+            
+            $widths[] = $width;
+            $heights[] = $height;
+            
+            if ($width > 256) {
+                trigger_error("Width of the icon must be 256 or lower");
+                return null;
+            }
+            if ($height > 256) {
+                trigger_error("Height of the icon must be 256 or lower");
+                return null;
+            }
+         
+            $currentImageData = "";
+            if ($width === 256 && $height === 256) {
+                //store as PNG
+                $stream = fopen('php://memory','r+');
+                imagepng($img,$stream);
+                rewind($stream);
+                $currentImageData = stream_get_contents($stream);
+                $imageDataSizes[] = strlen($currentImageData);
+                $imageData .= $currentImageData;
+                continue;
+            }            
+            
+            $usedColorCount = imagecolorstotal($img);
 
             $transparent = imagecolortransparent($img);
-            $isTransparent = $transparent != -1;
-
-            if ($colorCount == 0) {
-                $colorCount = 0;
+            
+            if ($usedColorCount === 0) {
+                $paletteColorCount = 0;
                 $bitCount = 24;
-            }
-            if (($colorCount > 0)&&($colorCount <= 2)) {
-                $colorCount = 2;
+            } elseif (($usedColorCount > 0) && ($usedColorCount <= 2)) {
+                $paletteColorCount = 2;
                 $bitCount = 1;
-            }
-            if (($colorCount > 2)&&($colorCount <= 16)) {
-                $colorCount = 16;
+            } elseif (($usedColorCount > 2) && ($usedColorCount <= 16)) {
+                $paletteColorCount = 16;
                 $bitCount = 4;
-            }
-            if (($colorCount > 16)&&($colorCount <= 256)) {
-                $colorCount = 0;
+            } elseif (($usedColorCount > 16) && ($usedColorCount <= 256)) {
+                $paletteColorCount = 256;
                 $bitCount = 8;
+            }                        
+            
+            if ($bitCount === 24) {                
+                //search for alpha channel
+                for ($x = 0; $x < $width; $x++) {
+                    for ($y = 0; $y < $height; $y++) {
+                        $rgba = imagecolorat($img, $x, $y);
+                        if(($rgba & 0x7F000000) >> 24) {
+                            $bitCount = 32;
+                            break 2;
+                        }
+                    }
+                }                
             }
+            
+            $paletteColorCounts[] = $paletteColorCount;
+            $bitCounts[] = $bitCount;
 
-            //ICONINFO:
-            $ret .= $writer->inttobyte($width);
-            $ret .= $writer->inttobyte($height);
-            $ret .= $writer->inttobyte($colorCount);
-            $ret .= $writer->inttobyte(0); //RESERVED
-
-            $planes = 0;
-            if ($bitCount >= 8) {
-                $planes = 1;
-            }
-
-            if ($hotSpotX !== null) {
-                $ret .= $writer->inttoword($hotSpotX);
-                $ret .= $writer->inttoword($hotSpotY);
-            } else {           
-                $ret .= $writer->inttoword($planes);
-                if ($bitCount >= 8) {
-                    $WBitCount = $bitCount;
-                }
-                if ($bitCount == 4) {
-                    $WBitCount = 0;
-                }
-                if ($bitCount == 1) {
-                    $WBitCount = 0;
-                }
-                $ret .= $writer->inttoword($WBitCount); //BITS
-            }
-
-            $remainder = (4 - ($width / (8 / $bitCount)) % 4) % 4;
-            $remainderMask = (4 - ($width / 8) % 4) % 4;
-
-            $size = 40 + ($width / (8 / $bitCount) + $remainder) * $height + (($width / 8 + $remainderMask) * $height);
-            if ($bitCount < 24) {
-                $size += pow(2, $bitCount) * 4;
-            }
-            $ret .= $writer->inttodword($size); //SIZE
-            $offset = 6 + 16 * $imageCount + $fullSize;
-            $ret .= $writer->inttodword($offset); //OFFSET
-            $fullSize += $size;
-        }
-
-        for ($q = 0; $q < $imageCount; $q++) {
-            $img = $images[$q];
-            $width = imagesx($img);
-            $height = imagesy($img);
-            $colorCount = imagecolorstotal($img);
-
-            $transparent = imagecolortransparent($img);
-            $isTransparent = $transparent != -1;
-
-            if ($colorCount == 0) {
-                $colorCount = 0;
-                $bitCount = 24;
-            }
-            if (($colorCount > 0) && ($colorCount <= 2)) {
-                $colorCount = 2;
-                $bitCount = 1;
-            }
-            if (($colorCount > 2) && ($colorCount <= 16)) {
-                $colorCount = 16;
-                $bitCount = 4;
-            }
-            if (($colorCount > 16) && ($colorCount <= 256)) {
-                $colorCount = 0;
-                $bitCount = 8;
-            }
-
-            //ICONS
-            $ret .= $writer->inttodword(40); //HEADSIZE
-            $ret .= $writer->inttodword($width); //
-            $ret .= $writer->inttodword(2 * $height); //
-            $ret .= $writer->inttoword(1); //PLANES
-            $ret .= $writer->inttoword($bitCount);   //
-            $ret .= $writer->inttodword(0); //Compress method
+            //BITMAPINFOHEADER
+            $currentImageData .= $writer->inttodword(40); //biSize
+            $currentImageData .= $writer->inttodword($width); //biWidth
+            $currentImageData .= $writer->inttodword(2 * $height); //biHeight
+            $currentImageData .= $writer->inttoword(1); //biPlanes
+            $currentImageData .= $writer->inttoword($bitCount);   //biBitCount
+            $currentImageData .= $writer->inttodword(self::BI_RGB); //biCompression
 
             $remainderMask = ($width / 8) % 4;
 
             $remainder = ($width / (8 / $bitCount)) % 4;
             $size = ($width / (8 / $bitCount) + $remainder) * $height + (($width / 8 + $remainderMask) * $height);
 
-            $ret .= $writer->inttodword($size); //SIZE
+            $currentImageData .= $writer->inttodword($size); //biSizeImage
 
-            $ret .= $writer->inttodword(0); //HPIXEL_M
-            $ret .= $writer->inttodword(0); //V_PIXEL_M
-            $ret .= $writer->inttodword($colorCount); //UCOLORS
-            $ret .= $writer->inttodword(0); //DCOLORS
+            $currentImageData .= $writer->inttodword(0); //biXPelsPerMeter
+            $currentImageData .= $writer->inttodword(0); //biYPelsPerMeter
+            $currentImageData .= $writer->inttodword($paletteColorCount); //biClrUsed
+            $currentImageData .= $writer->inttodword(0); //biClrImportant
 
-            $cc = $colorCount;
-            if ($cc == 0) {
-                $cc = 256;
-            }
-
-            if ($bitCount < 24) {
-                $colorTotal = imagecolorstotal($img);
-                
-                for ($p = 0; $p < $colorTotal; $p++) {
-                    $color = imagecolorsforindex($img, $p);
-                    $ret .= $writer->inttobyte($color["blue"]);
-                    $ret .= $writer->inttobyte($color["green"]);
-                    $ret .= $writer->inttobyte($color["red"]);
-                    $ret .= $writer->inttobyte(0); //RESERVED
+            if ($bitCount < 24) {                
+                for ($j = 0; $j < $usedColorCount; $j++) {
+                    $color = imagecolorsforindex($img, $j);
+                    $currentImageData .= $writer->inttobyte($color["blue"]);
+                    $currentImageData .= $writer->inttobyte($color["green"]);
+                    $currentImageData .= $writer->inttobyte($color["red"]);
+                    $currentImageData .= $writer->inttobyte(0); //RESERVED
                 }
 
-                for ($p = $colorTotal; $p < $cc; $p++) {
-                    $ret .= $writer->inttobyte(0);
-                    $ret .= $writer->inttobyte(0);
-                    $ret .= $writer->inttobyte(0);
-                    $ret .= $writer->inttobyte(0); //RESERVED
+                for ($j = $usedColorCount; $j < $paletteColorCount; $j++) {
+                    $currentImageData .= $writer->inttobyte(0);
+                    $currentImageData .= $writer->inttobyte(0);
+                    $currentImageData .= $writer->inttobyte(0);
+                    $currentImageData .= $writer->inttobyte(0); //RESERVED
                 }
             }
 
@@ -191,7 +160,7 @@ class IconWriter {
 
                         $bWrite .= $this->decbinx($color, $bitCount);
                         if (strlen($bWrite) == 8) {
-                            $ret .= $writer->inttobyte(bindec($bWrite));
+                            $currentImageData .= $writer->inttobyte(bindec($bWrite));
                             $bWrite = "";
                         }
                     }
@@ -201,10 +170,10 @@ class IconWriter {
                         for ($t = 0; $t < 8 - $sl; $t++) {
                             $sl .= "0";
                         }
-                        $ret .= $writer->inttobyte(bindec($bWrite));
+                        $currentImageData .= $writer->inttobyte(bindec($bWrite));
                     }
                     for ($z = 0; $z < $remainder; $z++) {
-                        $ret .= $writer->inttobyte(0);
+                        $currentImageData .= $writer->inttobyte(0);
                     }
                 }
             }
@@ -213,15 +182,16 @@ class IconWriter {
                 for ($y = $height - 1; $y >= 0; $y--) {
                     for ($x = 0; $x < $width; $x++) {
                         $color = imagecolorsforindex($img, imagecolorat($img, $x, $y));
-                        $ret .= $writer->inttobyte($color["blue"]);
-                        $ret .= $writer->inttobyte($color["green"]);
-                        $ret .= $writer->inttobyte($color["red"]);
+                        $currentImageData .= $writer->inttobyte($color["blue"]);
+                        $currentImageData .= $writer->inttobyte($color["green"]);
+                        $currentImageData .= $writer->inttobyte($color["red"]);
                         if ($bitCount == 32) {
-                            $ret .= $writer->inttobyte(0); //Alpha for self:XP_COLORS
+                            $opacity = 255 - round($color["alpha"] * 255 / 127);
+                            $currentImageData .= $writer->inttobyte($opacity);
                         }
                     }
                     for ($z = 0; $z < $remainder; $z++) {
-                        $ret .= $writer->inttobyte(0);
+                        $currentImageData .= $writer->inttobyte(0);
                     }
                 }
             }
@@ -237,17 +207,52 @@ class IconWriter {
                         $bOut .= "0";
                     }
                 }
-                for ($p = 0; $p < strlen($bOut); $p += 8) {
-                    $byte = bindec(substr($bOut, $p, 8));
+                for ($j = 0; $j < strlen($bOut); $j += 8) {
+                    $byte = bindec(substr($bOut, $j, 8));
                     $byteCount++;
-                    $ret .= $writer->inttobyte($byte);
+                    $currentImageData .= $writer->inttobyte($byte);
                 }
                 $remainder = $byteCount % 4;
                 for ($z = 0; $z < $remainder; $z++) {
-                    $ret .= $writer->inttobyte(0xff);
+                    $currentImageData .= $writer->inttobyte(0xff);
                 }
             }
+            $imageDataSizes[] = strlen($currentImageData);
+            $imageData .= $currentImageData;
         }
+        
+        $fullSize = 0;
+        for ($i = 0; $i < $imageCount; $i++) {            
+            $width = $widths[$i];
+            $height = $heights[$i];
+
+            $paletteColorCount = $paletteColorCounts[$i];
+            $bitCount = $bitCounts[$i];
+            
+            //ICONDIRENTRY
+            $ret .= $writer->inttobyte($width === 256 ? 0 : $width); //bWidth
+            $ret .= $writer->inttobyte($height === 256 ? 0 : $height); //bHeight
+            $ret .= $writer->inttobyte($paletteColorCount); //bColorCount
+            $ret .= $writer->inttobyte(0); //bReserved
+            
+            if ($hotSpotX !== null) {
+                $ret .= $writer->inttoword($hotSpotX); //wHotSpotX
+                $ret .= $writer->inttoword($hotSpotY); //wHotSpotY
+            } else {           
+                $ret .= $writer->inttoword(1); //wPlanes
+                $ret .= $writer->inttoword($bitCount); //wBitCount
+            }
+
+            $remainder = (4 - ($width / (8 / $bitCount)) % 4) % 4;
+            $remainderMask = (4 - ($width / 8) % 4) % 4;
+
+            $size = $imageDataSizes[$i];
+            $ret .= $writer->inttodword($size); //dwBytesInRes
+            $offset = 6 + 16 * $imageCount + $fullSize;
+            $ret .= $writer->inttodword($offset); //dwImageOffset
+            $fullSize += $size;
+        }
+        $ret .= $imageData;
 
         return $ret;
    }
@@ -260,13 +265,14 @@ class IconWriter {
      */
     public function createToFile($images, string $filename): bool
     {
+        $data = $this->createAsString($images);
+        if ($data === null) {
+            return false;
+        }
+        
         $f = @fopen($filename, "w");
         if ($f === false) {
             trigger_error("Cannot write icon to file \"$filename\"");
-            return false;
-        }
-        $data = $this->createAsString($images);
-        if ($data === false) {
             return false;
         }
         fwrite($f, $data);
@@ -288,18 +294,24 @@ class IconWriter {
      * Creates icon and prints it to standard output. 
      * Note: use proper header("Content-type: image/x-icon")
      * @param resource|resource[]|GdImage|GdImage[] $images Target Image resource (Can be array of image resources/GdImages)     
+     * @return bool True on success, False on failure
      */
-    public function createToPrint($images): void
+    public function createToPrint($images): bool
     {
-        echo $this->createAsString($images);
+        $data = $this->createAsString($images);
+        if ($data === null) {
+            return false;
+        }
+        echo $data;
+        return true;
     }
     
     /**
      * 
      * @param resource|GdImage $image
-     * @return string
+     * @return string|null String data of cursor, null on failure
      */
-    public function createCursorAsString($image, int $hotSpotX, int $hotSpotY): string {
+    public function createCursorAsString($image, int $hotSpotX, int $hotSpotY): ?string {
         return $this->createAsStringInternal($image, $hotSpotX, $hotSpotY);
     }
     
@@ -308,9 +320,15 @@ class IconWriter {
      * @param resource|GdImage $image
      * @param int $hotSpotX Cursor hot spot X
      * @param int $hotSpotY Cursor hot spot Y
+     * @return bool True on success, False on failure
      */
-    public function createCursorToPrint($image, int $hotSpotX, int $hotSpotY) {
-        echo $this->createCursorAsString($image, $hotSpotX, $hotSpotY);
+    public function createCursorToPrint($image, int $hotSpotX, int $hotSpotY): bool {
+        $data = $this->createCursorAsString($image, $hotSpotX, $hotSpotY);
+        if ($data === null) {
+            return false;
+        }
+        echo $data;
+        return true;
     }
     
     /**
@@ -323,15 +341,16 @@ class IconWriter {
      */
     public function createCursorToFile($image, string $filename, int $hotSpotX, int $hotSpotY): bool
     {
+        $data = $this->createCursorAsString($image, $hotSpotX, $hotSpotY);
+        if ($data === null) {
+            return false;
+        }
+        
         $f = @fopen($filename, "w");
         if ($f === false) {
             trigger_error("Cannot write cursor to file \"$filename\"");
             return false;
-        }
-        $data = $this->createCursorAsString($image, $hotSpotX, $hotSpotY);
-        if ($data === false) {
-            return false;
-        }
+        }        
         fwrite($f, $data);
         fclose($f);
         
