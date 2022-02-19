@@ -59,18 +59,7 @@ class IconWriter {
                 trigger_error("Height of the icon must be 256 or lower");
                 return null;
             }
-         
-            $currentImageData = "";
-            if ($width === 256 && $height === 256) {
-                //store as PNG
-                $stream = fopen('php://memory','r+');
-                imagepng($img,$stream);
-                rewind($stream);
-                $currentImageData = stream_get_contents($stream);
-                $imageDataSizes[] = strlen($currentImageData);
-                $imageData .= $currentImageData;
-                continue;
-            }            
+            
             
             $usedColorCount = imagecolorstotal($img);
 
@@ -88,7 +77,7 @@ class IconWriter {
             } elseif (($usedColorCount > 16) && ($usedColorCount <= 256)) {
                 $paletteColorCount = 256;
                 $bitCount = 8;
-            }                        
+            }    
             
             if ($bitCount === 24) {                
                 //search for alpha channel
@@ -105,6 +94,20 @@ class IconWriter {
             
             $paletteColorCounts[] = $paletteColorCount;
             $bitCounts[] = $bitCount;
+         
+            $currentImageData = "";
+            if ($width === 256 && $height === 256 && $bitCount === 32) {
+                //store as PNG
+                $stream = fopen('php://memory','r+');
+                imagepng($img,$stream);
+                rewind($stream);
+                $currentImageData = stream_get_contents($stream);
+                $imageDataSizes[] = strlen($currentImageData);
+                $imageData .= $currentImageData;
+                continue;
+            }            
+                                                                    
+            
 
             //BITMAPINFOHEADER
             $currentImageData .= $writer->inttodword(40); //biSize

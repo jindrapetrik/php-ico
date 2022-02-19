@@ -2,8 +2,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
- - Storing 256x256 icons as PNG compressed
+ - Storing 256x256 32bit icons as PNG compressed
  - Error on writing larger images than 256
+ - Enhanced sample for generating icon
 
 ## [4.0] - 2022-02-18
  - Added cursor (.CUR) support

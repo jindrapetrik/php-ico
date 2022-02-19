@@ -92,15 +92,27 @@ if ($action === "generate_icon") {
     header("Content-type: image/x-icon");
     header('Content-Disposition: attachment; filename="generated.ico"');
 
-    $sizes = [48, 32, 16];
+    $sizes = [256, 128, 64, 48, 32, 16];
 
     $images = [];
-    foreach ($sizes as $size) {
+    foreach ($sizes as $size) {        
+        //alpha image
         $image = imagecreatetruecolor($size, $size);
-        $white = imagecolorallocate($image, 255, 255, 255);
-        $red = imagecolorallocate($image, 255, 0, 0);
-        imagefilledrectangle($image, 0, 0, $size, $size, $white);
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+        $red = imagecolorallocatealpha($image, 255, 0, 0, 64);
+        imagefill($image, 0, 0, $transparent);
         imagefilledellipse($image, $size / 2, $size / 2, $size, $size, $red);
+        $images[] = $image;
+        
+        //standard image with trasparent background
+        $image = imagecreatetruecolor($size, $size);
+        $transparent = imagecolorallocate($image, 255, 255, 255);
+        $red = imagecolorallocate($image, 255, 0, 0);
+        imagefill($image, 0, 0, $transparent);
+        imagefilledellipse($image, $size / 2, $size / 2, $size, $size, $red);
+        imagecolortransparent($image, $transparent);                
         $images[] = $image;
     }
 
